@@ -1,8 +1,8 @@
 "use client";
 
 import Script from "next/script";
-import { useMemo, useRef, useState } from "react";
-import { CreditCard, Landmark, Loader2, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CreditCard, Landmark, Loader2, ShieldAlert, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/components/cart-provider";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,14 @@ const gatewayCopy: Record<
   }
 };
 
+function getPaystackClient() {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  return window.Paystack ?? window.PaystackPop;
+}
+
 export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProps) {
   const { items, clearCart } = useCart();
   const [gateway, setGateway] = useState<PaymentGateway>("paystack");
@@ -45,8 +53,12 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
   const [customerEmail, setCustomerEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paystackLoaded, setPaystackLoaded] = useState(false);
-  const [flutterwaveLoaded, setFlutterwaveLoaded] = useState(false);
+  const [paystackLoaded, setPaystackLoaded] = useState(() => Boolean(getPaystackClient()));
+  const [flutterwaveLoaded, setFlutterwaveLoaded] = useState(() =>
+    typeof window !== "undefined" ? Boolean(window.FlutterwaveCheckout) : false
+  );
+  const [paystackError, setPaystackError] = useState(false);
+  const [flutterwaveError, setFlutterwaveError] = useState(false);
   const paymentHandledRef = useRef(false);
 
   const paystackPublicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ?? "";
@@ -60,6 +72,78 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
     () => items.map((item) => `${item.name} x${item.quantity}`).join(", "),
     [items]
   );
+  const gatewayLoaded: Record<PaymentGateway, boolean> = {
+    paystack: paystackLoaded,
+    flutterwave: flutterwaveLoaded
+  };
+  const gatewayErrored: Record<PaymentGateway, boolean> = {
+    paystack: paystackError,
+    flutterwave: flutterwaveError
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (getPaystackClient()) {
+      setPaystackLoaded(true);
+    }
+
+    if (window.FlutterwaveCheckout) {
+      setFlutterwaveLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !paystackPublicKey || paystackLoaded || paystackError) {
+      return;
+    }
+
+    let attempts = 0;
+    const intervalId = window.setInterval(() => {
+      if (getPaystackClient()) {
+        setPaystackLoaded(true);
+        setPaystackError(false);
+        window.clearInterval(intervalId);
+        return;
+      }
+
+      attempts += 1;
+
+      if (attempts >= 40) {
+        setPaystackError(true);
+        window.clearInterval(intervalId);
+      }
+    }, 300);
+
+    return () => window.clearInterval(intervalId);
+  }, [paystackError, paystackLoaded, paystackPublicKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !flutterwavePublicKey || flutterwaveLoaded || flutterwaveError) {
+      return;
+    }
+
+    let attempts = 0;
+    const intervalId = window.setInterval(() => {
+      if (window.FlutterwaveCheckout) {
+        setFlutterwaveLoaded(true);
+        setFlutterwaveError(false);
+        window.clearInterval(intervalId);
+        return;
+      }
+
+      attempts += 1;
+
+      if (attempts >= 40) {
+        setFlutterwaveError(true);
+        window.clearInterval(intervalId);
+      }
+    }, 300);
+
+    return () => window.clearInterval(intervalId);
+  }, [flutterwaveError, flutterwaveLoaded, flutterwavePublicKey]);
 
   function parseName(fullName: string) {
     const parts = fullName
@@ -85,6 +169,15 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
     }
 
     if (!gatewayAvailability[gateway]) {
+      return false;
+    }
+
+    if (!gatewayLoaded[gateway]) {
+      toast.error(
+        gatewayErrored[gateway]
+          ? `${selectedGatewayLabel(gateway)} could not load in this browser.`
+          : `${selectedGatewayLabel(gateway)} is still loading. Try again in a moment.`
+      );
       return false;
     }
 
@@ -137,7 +230,9 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
       return;
     }
 
-    if (!paystackLoaded || !window.Paystack) {
+    const PaystackClient = getPaystackClient();
+
+    if (!paystackLoaded || !PaystackClient) {
       toast.error("Paystack is still loading. Try again in a moment.");
       return;
     }
@@ -149,9 +244,11 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
     setIsProcessing(true);
 
     try {
-      const popup = new window.Paystack();
+      const popup = new PaystackClient();
+      const launchCheckout = popup.newTransaction ?? popup.checkout;
 
-      await popup.checkout({
+      await Promise.resolve(
+        launchCheckout.call(popup, {
         key: paystackPublicKey,
         email: customerEmail.trim(),
         amount: total * 100,
@@ -196,7 +293,8 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
           });
           setIsProcessing(false);
         }
-      });
+        })
+      );
     } catch (error) {
       toast.error("Unable to start Paystack checkout", {
         description: error instanceof Error ? error.message : "Please try again."
@@ -277,11 +375,77 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
   const selectedGateway = gatewayCopy[gateway];
   const SelectedGatewayIcon = selectedGateway.icon;
   const selectedGatewayConfigured = gatewayAvailability[gateway];
+  const selectedGatewayLoaded = gatewayLoaded[gateway];
+  const selectedGatewayErrored = gatewayErrored[gateway];
+
+  function selectedGatewayLabel(option: PaymentGateway) {
+    return gatewayCopy[option].label;
+  }
+
+  function getGatewayStatus(option: PaymentGateway) {
+    if (!gatewayAvailability[option]) {
+      return {
+        label: "Preview only",
+        className: "bg-[#f6efe7] text-[#9c7f6e]"
+      };
+    }
+
+    if (gatewayErrored[option]) {
+      return {
+        label: "Blocked",
+        className: "bg-[#fbebeb] text-[#b55b5b]"
+      };
+    }
+
+    if (gatewayLoaded[option]) {
+      return {
+        label: "Live",
+        className: "bg-[#eef4ee] text-[#50705c]"
+      };
+    }
+
+    return {
+      label: "Connecting",
+      className: "bg-[#f4efe7] text-[#8c745f]"
+    };
+  }
 
   return (
     <>
-      <Script onLoad={() => setPaystackLoaded(true)} src="https://js.paystack.co/v2/inline.js" strategy="afterInteractive" />
-      <Script onLoad={() => setFlutterwaveLoaded(true)} src="https://checkout.flutterwave.com/v3.js" strategy="afterInteractive" />
+      <Script
+        id="paystack-inline"
+        onError={() => {
+          setPaystackError(true);
+          setPaystackLoaded(false);
+        }}
+        onLoad={() => {
+          setPaystackError(false);
+          setPaystackLoaded(Boolean(getPaystackClient()));
+        }}
+        onReady={() => {
+          setPaystackError(false);
+          setPaystackLoaded(Boolean(getPaystackClient()));
+        }}
+        src="https://js.paystack.co/v2/inline.js"
+        strategy="afterInteractive"
+      />
+      <Script
+        id="flutterwave-inline"
+        onError={() => {
+          setFlutterwaveError(true);
+          setFlutterwaveLoaded(false);
+        }}
+        onLoad={() => {
+          setFlutterwaveError(false);
+          setFlutterwaveLoaded(true);
+        }}
+        onReady={() => {
+          setFlutterwaveError(false);
+          setFlutterwaveLoaded(Boolean(window.FlutterwaveCheckout));
+        }}
+        src="https://checkout.flutterwave.com/v3.js"
+        strategy="afterInteractive"
+      />
 
       <div className="space-y-4 rounded-[18px] border border-[#eadfce] bg-[#faf6f1] p-4">
         <div className="flex items-center justify-between gap-3">
@@ -296,6 +460,7 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
           {(Object.keys(gatewayCopy) as PaymentGateway[]).map((option) => {
             const GatewayIcon = gatewayCopy[option].icon;
             const active = option === gateway;
+            const status = getGatewayStatus(option);
 
             return (
               <button
@@ -316,15 +481,8 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold text-foreground">{gatewayCopy[option].label}</p>
-                      <span
-                        className={cn(
-                          "rounded-full px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em]",
-                          gatewayAvailability[option]
-                            ? "bg-[#eef4ee] text-[#50705c]"
-                            : "bg-[#f6efe7] text-[#9c7f6e]"
-                        )}
-                      >
-                        {gatewayAvailability[option] ? "Ready" : "Preview only"}
+                      <span className={cn("rounded-full px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.14em]", status.className)}>
+                        {status.label}
                       </span>
                     </div>
                     <p className="mt-1 text-sm leading-6 text-[#8f7767]">{gatewayCopy[option].detail}</p>
@@ -338,6 +496,14 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
         {!selectedGatewayConfigured ? (
           <div className="rounded-[16px] border border-[#eadfce] bg-white/80 p-4 text-sm leading-6 text-[#6b4f3a]">
             {selectedGateway.label} checkout is unavailable in this preview until its payment keys are connected.
+          </div>
+        ) : null}
+
+        {selectedGatewayConfigured && !selectedGatewayLoaded ? (
+          <div className="rounded-[16px] border border-[#eadfce] bg-white/80 p-4 text-sm leading-6 text-[#6b4f3a]">
+            {selectedGatewayErrored
+              ? `${selectedGateway.label} could not load in this browser. Check your internet connection, disable content blockers for this site, and refresh the page.`
+              : `Connecting to ${selectedGateway.label}. The payment button will unlock as soon as the provider script finishes loading.`}
           </div>
         ) : null}
 
@@ -389,16 +555,24 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
 
         <Button
           className="w-full justify-center"
-          disabled={isProcessing || !selectedGatewayConfigured}
+          disabled={isProcessing || !selectedGatewayConfigured || !selectedGatewayLoaded}
           onClick={gateway === "paystack" ? handlePaystackCheckout : handleFlutterwaveCheckout}
           type="button"
         >
-          {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+          {isProcessing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : selectedGatewayLoaded ? (
+            <ShieldCheck className="h-4 w-4" />
+          ) : (
+            <ShieldAlert className="h-4 w-4" />
+          )}
           {isProcessing
             ? "Processing..."
-            : selectedGatewayConfigured
+            : selectedGatewayConfigured && selectedGatewayLoaded
               ? `Pay ${total.toLocaleString("en-NG")} NGN with ${selectedGateway.label}`
-              : `${selectedGateway.label} unavailable in preview`}
+              : selectedGatewayConfigured
+                ? `Waiting for ${selectedGateway.label}`
+                : `${selectedGateway.label} unavailable in preview`}
         </Button>
 
         <p className="text-xs leading-6 text-[#8f7767]">

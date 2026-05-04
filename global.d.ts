@@ -59,6 +59,7 @@ interface FlutterwaveCheckoutOptions {
 declare global {
   interface Window {
     Paystack?: new () => PaystackInstance;
+    PaystackPop?: new () => PaystackInstance;
     FlutterwaveCheckout?: (options: FlutterwaveCheckoutOptions) => void;
   }
 }
