@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 34 43% 97%;
+    --foreground: 20 31% 13%;
+    --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --card: 0 0% 100%;
+    --card-foreground: 20 31% 13%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 31% 13%;
+    --primary: 38 43% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 21 32% 27%;
+    --secondary-foreground: 34 43% 97%;
+    --muted: 34 32% 92%;
+    --muted-foreground: 26 21% 35%;
+    --accent: 35 48% 87%;
+    --accent-foreground: 20 31% 13%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 38 35% 78%;
+    --input: 38 35% 78%;
+    --ring: 38 43% 50%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply min-h-screen bg-background text-foreground antialiased;
+    background-image: none;
+  }
+
+  ::selection {
+    background: rgba(201, 168, 76, 0.22);
+    color: hsl(var(--foreground));
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-logo-marquee {
+    animation: logo-marquee 28s linear infinite;
+  }
+
+  .animate-fade-slide {
+    animation: fade-slide 700ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .animate-float-slow {
+    animation: float-slow 7s ease-in-out infinite;
+  }
+
+  .animate-product-rail {
+    animation: product-rail 28s linear infinite;
+  }
+}
+
+@keyframes logo-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes fade-slide {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes product-rail {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

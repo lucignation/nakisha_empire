@@ -1,0 +1,935 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Luminesce — Glow with Confidence</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pink: #fce8ef;
+    --pink-mid: #f9d0de;
+    --pink-deep: #e8a0b8;
+    --lavender: #ede8f5;
+    --lavender-mid: #d8cef0;
+    --lavender-deep: #b8a8d8;
+    --cream: #fdf8f4;
+    --white: #ffffff;
+    --gold: #c9a84c;
+    --gold-light: #e8d5a0;
+    --gold-dark: #a07830;
+    --text-dark: #3a2a32;
+    --text-mid: #7a5a68;
+    --text-light: #b898a8;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body: 'Jost', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--cream);
+    color: var(--text-dark);
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 4rem;
+    background: rgba(253,248,244,0.88);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(201,168,76,0.15);
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    letter-spacing: 0.04em;
+  }
+  .nav-logo span { color: var(--gold); }
+  .nav-links {
+    display: flex; gap: 2.5rem; list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-mid);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+  .nav-icons { display: flex; gap: 1.2rem; align-items: center; }
+  .nav-icons a { color: var(--text-mid); text-decoration: none; font-size: 0.85rem; }
+  .nav-cart {
+    background: var(--gold);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.5rem 1.2rem;
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .nav-cart:hover { background: var(--gold-dark); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 0 4rem;
+    padding-top: 80px;
+    background: linear-gradient(135deg, var(--pink) 0%, var(--cream) 55%, var(--lavender) 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
+    top: -100px; right: -100px;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(216,198,240,0.3) 0%, transparent 70%);
+    bottom: -50px; left: 200px;
+  }
+  .hero-text { position: relative; z-index: 2; padding-right: 3rem; }
+  .hero-badge {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid rgba(201,168,76,0.35);
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    margin-bottom: 1.5rem;
+  }
+  .hero-headline {
+    font-family: var(--font-display);
+    font-size: 4.8rem;
+    font-weight: 400;
+    line-height: 1.05;
+    color: var(--text-dark);
+    margin-bottom: 1.5rem;
+  }
+  .hero-headline em {
+    font-style: italic;
+    color: var(--gold-dark);
+  }
+  .hero-sub {
+    font-size: 0.95rem;
+    color: var(--text-mid);
+    line-height: 1.8;
+    max-width: 380px;
+    margin-bottom: 2.5rem;
+  }
+  .hero-buttons { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--gold);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.9rem 2.2rem;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary:hover { background: var(--gold-dark); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(160,120,48,0.25); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-mid);
+    border: 1px solid rgba(122,90,104,0.3);
+    border-radius: 50px;
+    padding: 0.9rem 2.2rem;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+
+  .hero-visual {
+    position: relative; z-index: 2;
+    display: flex; justify-content: center; align-items: center;
+  }
+  .hero-product-card {
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 32px;
+    padding: 2.5rem 2rem;
+    width: 340px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(232,160,184,0.15);
+  }
+  .product-orb {
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fde8f0, #f0b8cc, #d888a8);
+    margin: 0 auto 1.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 4rem;
+    position: relative;
+    box-shadow: 0 12px 40px rgba(216,136,168,0.3);
+  }
+  .product-orb::after {
+    content: '';
+    position: absolute;
+    width: 60px; height: 30px;
+    background: rgba(255,255,255,0.4);
+    border-radius: 50%;
+    top: 25px; left: 25px;
+    transform: rotate(-20deg);
+  }
+  .hero-product-name {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 0.3rem;
+  }
+  .hero-product-sub {
+    font-size: 0.78rem;
+    color: var(--text-light);
+    letter-spacing: 0.1em;
+    margin-bottom: 1.2rem;
+  }
+  .hero-product-price {
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    color: var(--gold);
+    font-weight: 300;
+  }
+  .floating-tag {
+    position: absolute;
+    background: white;
+    border: 1px solid rgba(201,168,76,0.2);
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
+    font-size: 0.72rem;
+    color: var(--text-mid);
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(200,160,184,0.12);
+  }
+  .tag-1 { top: 20px; left: -20px; }
+  .tag-2 { bottom: 40px; right: -20px; }
+  .tag-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); margin-right: 6px; vertical-align: middle; }
+
+  /* MARQUEE */
+  .marquee-bar {
+    background: var(--text-dark);
+    padding: 0.7rem 0;
+    overflow: hidden;
+    position: relative;
+  }
+  .marquee-track {
+    display: flex; gap: 3rem;
+    animation: marquee 20s linear infinite;
+    white-space: nowrap;
+  }
+  .marquee-item {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    flex-shrink: 0;
+  }
+  .marquee-gold { color: var(--gold-light); }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* BENEFITS */
+  .benefits {
+    padding: 6rem 4rem;
+    background: var(--white);
+  }
+  .section-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.8rem;
+    display: block;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 3rem;
+    font-weight: 400;
+    color: var(--text-dark);
+    line-height: 1.1;
+    margin-bottom: 3rem;
+  }
+  .section-title em { font-style: italic; color: var(--gold-dark); }
+  .benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+  .benefit-card {
+    background: var(--cream);
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    border: 1px solid rgba(201,168,76,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .benefit-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(232,160,184,0.12); }
+  .benefit-icon {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+  }
+  .bi-pink { background: var(--pink-mid); }
+  .bi-lavender { background: var(--lavender-mid); }
+  .bi-gold { background: rgba(201,168,76,0.12); }
+  .benefit-name {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 0.8rem;
+  }
+  .benefit-desc {
+    font-size: 0.85rem;
+    color: var(--text-mid);
+    line-height: 1.8;
+  }
+
+  /* PRODUCTS */
+  .products {
+    padding: 6rem 4rem;
+    background: var(--lavender);
+  }
+  .products-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 3rem;
+  }
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+  .product-card {
+    background: var(--white);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    cursor: pointer;
+  }
+  .product-card:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(184,168,216,0.25); }
+  .product-img {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .pi-1 { background: linear-gradient(135deg, #fce8ef, #f0b8d0); }
+  .pi-2 { background: linear-gradient(135deg, #ede8f5, #c8b8e8); }
+  .pi-3 { background: linear-gradient(135deg, #fdf8f0, #f0e0b8); }
+  .pi-4 { background: linear-gradient(135deg, #e8f5f0, #b8e0d0); }
+  .product-badge {
+    position: absolute;
+    top: 12px; left: 12px;
+    background: var(--gold);
+    color: white;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.7rem;
+    border-radius: 50px;
+  }
+  .product-info { padding: 1.2rem; }
+  .product-info-name {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 0.2rem;
+  }
+  .product-info-sub {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-bottom: 0.8rem;
+  }
+  .product-info-row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .product-price {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    color: var(--gold);
+    font-weight: 300;
+  }
+  .product-stars { color: var(--gold); font-size: 0.75rem; }
+  .add-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .add-btn:hover { background: var(--gold-dark); transform: scale(1.1); }
+
+  /* RITUAL */
+  .ritual {
+    padding: 6rem 4rem;
+    background: var(--pink);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .ritual-visual {
+    position: relative;
+    display: flex; justify-content: center;
+  }
+  .ritual-orb-main {
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fdf5f8, #f8d0e0, #e8a8c0);
+    box-shadow: 0 20px 60px rgba(232,160,184,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7rem;
+  }
+  .ritual-steps { counter-reset: step; }
+  .ritual-step {
+    display: flex; gap: 1.5rem; align-items: flex-start;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid rgba(201,168,76,0.12);
+  }
+  .ritual-step:last-child { border-bottom: none; }
+  .step-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--gold);
+    color: white;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-name {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-dark);
+    margin-bottom: 0.3rem;
+  }
+  .step-desc { font-size: 0.83rem; color: var(--text-mid); line-height: 1.7; }
+
+  /* TESTIMONIALS */
+  .testimonials {
+    padding: 6rem 4rem;
+    background: var(--cream);
+  }
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  .testimonial-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid rgba(201,168,76,0.1);
+    position: relative;
+  }
+  .quote-mark {
+    font-family: var(--font-display);
+    font-size: 4rem;
+    color: var(--gold-light);
+    line-height: 1;
+    position: absolute;
+    top: 1rem; left: 1.5rem;
+    font-weight: 300;
+  }
+  .testimonial-text {
+    font-size: 0.88rem;
+    color: var(--text-mid);
+    line-height: 1.8;
+    padding-top: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .testimonial-author {
+    display: flex; align-items: center; gap: 0.8rem;
+  }
+  .author-avatar {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: 500;
+    color: white;
+    flex-shrink: 0;
+  }
+  .av-1 { background: linear-gradient(135deg, var(--pink-deep), #c870a0); }
+  .av-2 { background: linear-gradient(135deg, var(--lavender-deep), #9070c0); }
+  .av-3 { background: linear-gradient(135deg, #d0b870, var(--gold)); }
+  .author-name { font-size: 0.85rem; font-weight: 500; color: var(--text-dark); }
+  .author-loc { font-size: 0.75rem; color: var(--text-light); }
+  .testimonial-stars { color: var(--gold); font-size: 0.8rem; margin-bottom: 0.5rem; }
+
+  /* NEWSLETTER */
+  .newsletter {
+    padding: 5rem 4rem;
+    background: var(--text-dark);
+    text-align: center;
+  }
+  .newsletter-title {
+    font-family: var(--font-display);
+    font-size: 2.8rem;
+    font-weight: 400;
+    color: var(--white);
+    margin-bottom: 0.8rem;
+  }
+  .newsletter-title em { font-style: italic; color: var(--gold-light); }
+  .newsletter-sub {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 2rem;
+  }
+  .newsletter-form {
+    display: flex; gap: 0; justify-content: center; max-width: 420px; margin: 0 auto;
+  }
+  .newsletter-input {
+    flex: 1;
+    padding: 0.9rem 1.5rem;
+    border: none;
+    border-radius: 50px 0 0 50px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    outline: none;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border: 1px solid rgba(201,168,76,0.25);
+    border-right: none;
+  }
+  .newsletter-input::placeholder { color: rgba(255,255,255,0.35); }
+  .newsletter-btn {
+    background: var(--gold);
+    color: white;
+    border: none;
+    border-radius: 0 50px 50px 0;
+    padding: 0.9rem 1.8rem;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .newsletter-btn:hover { background: var(--gold-dark); }
+
+  /* FOOTER */
+  footer {
+    background: #2a1e24;
+    padding: 4rem 4rem 2rem;
+    color: rgba(255,255,255,0.55);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+  }
+  .footer-logo {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    color: white;
+    margin-bottom: 1rem;
+  }
+  .footer-logo span { color: var(--gold-light); }
+  .footer-tagline { font-size: 0.82rem; line-height: 1.8; margin-bottom: 1.5rem; }
+  .social-links { display: flex; gap: 0.8rem; }
+  .social-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,168,76,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  .social-btn:hover { border-color: var(--gold-light); color: var(--gold-light); }
+  .footer-heading {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: white;
+    margin-bottom: 1.2rem;
+  }
+  .footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+  .footer-links a { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.82rem; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--gold-light); }
+  .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 1.5rem;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.75rem;
+  }
+
+  /* SCROLL ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .hero-text { animation: fadeUp 0.8s ease both; }
+  .hero-visual { animation: fadeUp 0.8s ease 0.15s both; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .product-orb { animation: float 4s ease-in-out infinite; }
+  .ritual-orb-main { animation: float 5s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Luminesce<span>.</span></div>
+  <ul class="nav-links">
+    <li><a href="#">Shop</a></li>
+    <li><a href="#">Routines</a></li>
+    <li><a href="#">Ingredients</a></li>
+    <li><a href="#">About</a></li>
+  </ul>
+  <div class="nav-icons">
+    <button class="nav-cart">Cart (0)</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-text">
+    <span class="hero-badge">✦ New Arrival — Golden Ritual Collection</span>
+    <h1 class="hero-headline">Glow<br>with <em>Confidence.</em></h1>
+    <p class="hero-sub">Luxuriously soft skincare crafted to nurture your skin and awaken your most radiant self — every single day.</p>
+    <div class="hero-buttons">
+      <a class="btn-primary" href="#">Shop Now</a>
+      <a class="btn-ghost" href="#">Explore Routines</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-product-card">
+      <div class="floating-tag tag-1"><span class="tag-dot"></span> 100% Clean Beauty</div>
+      <div class="product-orb">🌸</div>
+      <div class="hero-product-name">Golden Rose Serum</div>
+      <div class="hero-product-sub">30ml · All Skin Types</div>
+      <div class="hero-product-price">₦28,500</div>
+      <div class="floating-tag tag-2"><span class="tag-dot"></span> ★★★★★ 4.9 (1.2k)</div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-bar">
+  <div class="marquee-track">
+    <span class="marquee-item">Free Delivery on Orders Over ₦15,000</span>
+    <span class="marquee-gold">✦</span>
+    <span class="marquee-item">100% Clean Ingredients</span>
+    <span class="marquee-gold">✦</span>
+    <span class="marquee-item">Dermatologist Tested</span>
+    <span class="marquee-gold">✦</span>
+    <span class="marquee-item">Cruelty Free &amp; Vegan</span>
+    <span class="marquee-gold">✦</span>
+    <span class="marquee-item">Free Delivery on Orders Over ₦15,000</span>
+    <span class="marquee-gold">✦</span>
+    <span class="marquee-item">100% Clean Ingredients</span>
+    <span class="marquee-gold">✦</span>
+    <span class="marquee-item">Dermatologist Tested</span>
+    <span class="marquee-gold">✦</span>
+    <span class="marquee-item">Cruelty Free &amp; Vegan</span>
+    <span class="marquee-gold">✦</span>
+  </div>
+</div>
+
+<!-- BENEFITS -->
+<section class="benefits">
+  <span class="section-label">Why Luminesce</span>
+  <h2 class="section-title">Three Pillars of<br><em>Your Glow</em></h2>
+  <div class="benefits-grid">
+    <div class="benefit-card">
+      <div class="benefit-icon bi-pink">✨</div>
+      <div class="benefit-name">Radiant Glow</div>
+      <p class="benefit-desc">Our vitamin-rich formulas unlock your skin's natural luminosity, delivering a healthy, lit-from-within radiance that lasts all day.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon bi-lavender">🌿</div>
+      <div class="benefit-name">Clear Skin</div>
+      <p class="benefit-desc">Gentle yet powerful botanicals work in harmony with your skin's microbiome, reducing blemishes and smoothing texture over time.</p>
+    </div>
+    <div class="benefit-card">
+      <div class="benefit-icon bi-gold">💎</div>
+      <div class="benefit-name">Deep Confidence</div>
+      <p class="benefit-desc">When your skin feels its best, you feel your best. Luminesce isn't just skincare — it's your daily ritual of self-love.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTS -->
+<section class="products">
+  <div class="products-header">
+    <div>
+      <span class="section-label">Bestsellers</span>
+      <h2 class="section-title" style="margin-bottom:0">Our Glow<br><em>Favourites</em></h2>
+    </div>
+    <a class="btn-ghost" href="#" style="white-space:nowrap">View All Products</a>
+  </div>
+  <div class="products-grid">
+    <div class="product-card">
+      <div class="product-img pi-1">
+        <div class="product-badge">Bestseller</div>
+        🧴
+      </div>
+      <div class="product-info">
+        <div class="product-stars">★★★★★</div>
+        <div class="product-info-name">Golden Rose Serum</div>
+        <div class="product-info-sub">Brightening · 30ml</div>
+        <div class="product-info-row">
+          <div class="product-price">₦28,500</div>
+          <button class="add-btn">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="product-card">
+      <div class="product-img pi-2">
+        <div class="product-badge">New</div>
+        🪷
+      </div>
+      <div class="product-info">
+        <div class="product-stars">★★★★★</div>
+        <div class="product-info-name">Lavender Bloom Toner</div>
+        <div class="product-info-sub">Soothing · 150ml</div>
+        <div class="product-info-row">
+          <div class="product-price">₦18,000</div>
+          <button class="add-btn">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="product-card">
+      <div class="product-img pi-3">
+        <div class="product-badge">Fan Fave</div>
+        🌟
+      </div>
+      <div class="product-info">
+        <div class="product-stars">★★★★☆</div>
+        <div class="product-info-name">Honey Glow Moisturiser</div>
+        <div class="product-info-sub">Hydrating · 50ml</div>
+        <div class="product-info-row">
+          <div class="product-price">₦22,000</div>
+          <button class="add-btn">+</button>
+        </div>
+      </div>
+    </div>
+    <div class="product-card">
+      <div class="product-img pi-4">
+        🌿
+      </div>
+      <div class="product-info">
+        <div class="product-stars">★★★★★</div>
+        <div class="product-info-name">Aloe Clarity Cleanser</div>
+        <div class="product-info-sub">Gentle · 100ml</div>
+        <div class="product-info-row">
+          <div class="product-price">₦14,500</div>
+          <button class="add-btn">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RITUAL -->
+<section class="ritual">
+  <div class="ritual-visual">
+    <div class="ritual-orb-main">🌸</div>
+  </div>
+  <div>
+    <span class="section-label">The Routine</span>
+    <h2 class="section-title" style="margin-bottom:2rem">Your Evening <em>Ritual</em></h2>
+    <div class="ritual-steps">
+      <div class="ritual-step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-name">Cleanse</div>
+          <p class="step-desc">Begin with our Aloe Clarity Cleanser. Massage gently in circular motions to remove the day without stripping your skin's natural oils.</p>
+        </div>
+      </div>
+      <div class="ritual-step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-name">Tone & Balance</div>
+          <p class="step-desc">Pat our Lavender Bloom Toner across your face. It calms redness, tightens pores, and prepares your skin to absorb what comes next.</p>
+        </div>
+      </div>
+      <div class="ritual-step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-name">Serum Glow</div>
+          <p class="step-desc">Apply 3–4 drops of our Golden Rose Serum, pressing gently into skin. This is your secret weapon for radiant, even-toned skin.</p>
+        </div>
+      </div>
+      <div class="ritual-step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-name">Seal & Nourish</div>
+          <p class="step-desc">Lock everything in with Honey Glow Moisturiser. Wake up to soft, plump, glowing skin — every morning.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials">
+  <div style="text-align:center">
+    <span class="section-label">Real Reviews</span>
+    <h2 class="section-title">What Our <em>Glowing Girls</em> Say</h2>
+  </div>
+  <div class="testimonials-grid">
+    <div class="testimonial-card">
+      <div class="quote-mark">"</div>
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">I've tried so many serums and this is the first one that actually made my skin visibly brighter within a week. My skin feels like velvet. I'm obsessed.</p>
+      <div class="testimonial-author">
+        <div class="author-avatar av-1">A</div>
+        <div>
+          <div class="author-name">Adaeze O.</div>
+          <div class="author-loc">Lagos, Nigeria</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="quote-mark">"</div>
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">The packaging alone made me feel luxurious — but the results? Unmatched. My hyperpigmentation has faded so much. Everyone keeps asking what I use.</p>
+      <div class="testimonial-author">
+        <div class="author-avatar av-2">F</div>
+        <div>
+          <div class="author-name">Fatimah K.</div>
+          <div class="author-loc">Abuja, Nigeria</div>
+        </div>
+      </div>
+    </div>
+    <div class="testimonial-card">
+      <div class="quote-mark">"</div>
+      <div class="testimonial-stars">★★★★★</div>
+      <p class="testimonial-text">Finally a skincare brand that understands melanin-rich skin. My glow is unmatched and I haven't had a breakout in two months since starting the routine.</p>
+      <div class="testimonial-author">
+        <div class="author-avatar av-3">C</div>
+        <div>
+          <div class="author-name">Chidera M.</div>
+          <div class="author-loc">Port Harcourt, Nigeria</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NEWSLETTER -->
+<section class="newsletter">
+  <span class="section-label" style="color:var(--gold-light)">Glow Club</span>
+  <h2 class="newsletter-title">Join the <em>Glow Community</em></h2>
+  <p class="newsletter-sub">Get skincare tips, exclusive offers, and early access to new launches — straight to your inbox.</p>
+  <div class="newsletter-form">
+    <input class="newsletter-input" type="email" placeholder="Your email address"/>
+    <button class="newsletter-btn">Subscribe</button>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div>
+      <div class="footer-logo">Luminesce<span>.</span></div>
+      <p class="footer-tagline">Soft, luxurious skincare for women who believe in their glow. Made with clean ingredients for radiant, confident skin.</p>
+      <div class="social-links">
+        <a class="social-btn" href="#">IG</a>
+        <a class="social-btn" href="#">WA</a>
+        <a class="social-btn" href="#">TT</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-heading">Shop</div>
+      <ul class="footer-links">
+        <li><a href="#">Serums</a></li>
+        <li><a href="#">Moisturisers</a></li>
+        <li><a href="#">Toners</a></li>
+        <li><a href="#">Cleansers</a></li>
+        <li><a href="#">Bundles</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-heading">Info</div>
+      <ul class="footer-links">
+        <li><a href="#">About Us</a></li>
+        <li><a href="#">Ingredients</a></li>
+        <li><a href="#">Skin Quiz</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Reviews</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-heading">Support</div>
+      <ul class="footer-links">
+        <li><a href="#">WhatsApp Us</a></li>
+        <li><a href="#">Delivery Info</a></li>
+        <li><a href="#">Returns Policy</a></li>
+        <li><a href="#">Track Order</a></li>
+        <li><a href="#">FAQ</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Luminesce Beauty. All rights reserved.</span>
+    <span>Made with 🌸 for your glow</span>
+  </div>
+</footer>
+
+</body>
+</html>
