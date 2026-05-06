@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { Product } from "@/lib/data";
+import { isProductAvailable, type Product } from "@/lib/data";
 
 const STORAGE_KEY = "nakisha-empire-cart";
 
@@ -56,6 +56,10 @@ export function CartProvider({ children }: CartProviderProps) {
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     function addItem(product: Product) {
+      if (!isProductAvailable(product)) {
+        return;
+      }
+
       setItems((currentItems) => {
         const existing = currentItems.find((entry) => entry.slug === product.slug);
         if (existing) {

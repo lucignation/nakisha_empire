@@ -11,6 +11,7 @@ export interface Benefit {
 }
 
 export interface Product {
+  id?: string;
   slug: string;
   name: string;
   shortDescription: string;
@@ -25,12 +26,20 @@ export interface Product {
   emoji: string;
   accent: string;
   image: string;
+  cloudinaryPublicId?: string | null;
   skinGoal: string;
   collection: string;
   stars: string;
   highlights: string[];
   ingredients: string[];
   howToUse: string;
+  sku?: string | null;
+  isPublished?: boolean;
+  trackInventory?: boolean;
+  stockQuantity?: number;
+  isOutOfStock?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Testimonial {
@@ -411,4 +420,16 @@ export function formatCurrency(value: number): string {
     currency: "NGN",
     maximumFractionDigits: 0
   }).format(value);
+}
+
+export function isProductAvailable(product: Product): boolean {
+  if (product.isOutOfStock) {
+    return false;
+  }
+
+  if (product.trackInventory) {
+    return (product.stockQuantity ?? 0) > 0;
+  }
+
+  return true;
 }

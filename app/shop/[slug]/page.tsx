@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrency, getProductBySlug, products } from "@/lib/data";
+import { formatCurrency, isProductAvailable } from "@/lib/data";
+import { getStorefrontProductBySlug, getStorefrontProducts } from "@/lib/server/products";
 
 interface ProductPageProps {
   params: {
@@ -16,14 +17,10 @@ interface ProductPageProps {
   };
 }
 
-export function generateStaticParams() {
-  return products.map((product) => ({
-    slug: product.slug
-  }));
-}
+export const dynamic = "force-dynamic";
 
-export function generateMetadata({ params }: ProductPageProps): Metadata {
-  const product = getProductBySlug(params.slug);
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const product = await getStorefrontProductBySlug(params.slug);
 
   if (!product) {
     return {
@@ -37,17 +34,19 @@ export function generateMetadata({ params }: ProductPageProps): Metadata {
   };
 }
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const product = getProductBySlug(params.slug);
+export default async function ProductPage({ params }: ProductPageProps) {
+  const product = await getStorefrontProductBySlug(params.slug);
 
   if (!product) {
     notFound();
   }
 
+  const products = await getStorefrontProducts();
   const relatedProducts = products
     .filter((item) => item.slug !== product.slug)
     .sort((left, right) => Number(right.collection === product.collection) - Number(left.collection === product.collection))
     .slice(0, 3);
+  const available = isProductAvailable(product);
 
   return (
     <>
@@ -103,6 +102,7 @@ export default function ProductPage({ params }: ProductPageProps) {
                 </div>
 
                 <p className="font-display text-4xl font-medium text-gold-500 sm:text-5xl">{formatCurrency(product.price)}</p>
+                <p className="text-sm font-medium text-[#8f7767]">{available ? "In stock" : "Currently out of stock"}</p>
 
                 <div className="space-y-3">
                   {product.highlights.map((highlight) => (

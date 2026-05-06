@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentGateway {
+  PAYSTACK
+  FLUTTERWAVE
+}
+
+model Product {
+  id                String         @id @default(cuid())
+  slug              String         @unique
+  name              String
+  shortDescription  String
+  description       String
+  category          String
+  brand             String
+  size              String
+  price             Int
+  rating            Float          @default(0)
+  reviewCount       Int            @default(0)
+  badge             String?
+  emoji             String?
+  accent            String?
+  imageUrl          String
+  cloudinaryPublicId String?
+  skinGoal          String
+  collection        String
+  highlights        Json
+  ingredients       Json
+  howToUse          String
+  sku               String?        @unique
+  isPublished       Boolean        @default(false)
+  trackInventory    Boolean        @default(true)
+  stockQuantity     Int            @default(0)
+  isOutOfStock      Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  inventoryLogs     InventoryLog[]
+  orderItems        OrderItem[]
+
+  @@index([isPublished, createdAt])
+  @@index([category, brand])
+}
+
+model InventoryLog {
+  id            String   @id @default(cuid())
+  productId      String
+  quantityBefore Int
+  quantityAfter  Int
+  changeAmount   Int
+  reason         String
+  createdAt      DateTime @default(now())
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, createdAt])
+}
+
+model Order {
+  id               String         @id @default(cuid())
+  orderNumber      String         @unique
+  customerName     String
+  customerEmail    String
+  customerPhone    String?
+  status           OrderStatus    @default(PENDING)
+  paymentGateway   PaymentGateway?
+  paymentReference String?        @unique
+  subtotalAmount   Int
+  shippingAmount   Int
+  totalAmount      Int
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  items            OrderItem[]
+
+  @@index([customerEmail, createdAt])
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  productId   String?
+  productName String
+  quantity    Int
+  unitPrice   Int
+  totalPrice  Int
+  createdAt   DateTime @default(now())
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+}

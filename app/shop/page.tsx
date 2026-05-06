@@ -4,14 +4,16 @@ import MarketplaceHomeCatalog from "@/components/marketplace-home-catalog";
 import ProductArt from "@/components/product-art";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency, products } from "@/lib/data";
+import { formatCurrency } from "@/lib/data";
+import { getStorefrontProducts } from "@/lib/server/products";
 
 export const metadata = {
   title: "Shop"
 };
 
-export default function ShopPage() {
-  const shopHighlights = [products[0], products[5]];
+export default async function ShopPage() {
+  const products = await getStorefrontProducts();
+  const shopHighlights = [products[0], products[products.length > 1 ? Math.min(5, products.length - 1) : 0]];
 
   return (
     <>

@@ -8,7 +8,8 @@ import ProductRail from "@/components/product-rail";
 import Reveal from "@/components/reveal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { featuredProducts, formatCurrency, products, type Product } from "@/lib/data";
+import { formatCurrency, type Product } from "@/lib/data";
+import { getFeaturedStorefrontProducts, getStorefrontProducts } from "@/lib/server/products";
 
 interface SectionHeaderProps {
   eyebrow: string;
@@ -39,7 +40,10 @@ function SectionHeader({ eyebrow, title, subtitle }: SectionHeaderProps) {
   );
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const products = await getStorefrontProducts();
+  const featuredProducts = getFeaturedStorefrontProducts(products);
+  const pickProduct = (index: number) => products[index % products.length];
   const categories = [...new Set(products.map((product) => product.category))]
     .map((category) => ({
       category,
@@ -61,8 +65,8 @@ export default function HomePage() {
       secondaryLabel: "Browse Categories",
       secondaryHref: "/#categories",
       highlights: ["Bestsellers restocked", "Quick add to cart", "Nationwide delivery"],
-      product: products[0],
-      secondaryProduct: products[3],
+      product: pickProduct(0),
+      secondaryProduct: pickProduct(3),
       statValue: "4.9 / 5",
       statLabel: "average rating across the most-loved shelf",
       supportTitle: "Faster shopping flow",
@@ -80,8 +84,8 @@ export default function HomePage() {
       secondaryLabel: "Explore Brands",
       secondaryHref: "/#brands",
       highlights: ["Routine-led discovery", "Rich product content", "Cleaner hero design"],
-      product: products[1],
-      secondaryProduct: products[2],
+      product: pickProduct(1),
+      secondaryProduct: pickProduct(2),
       statValue: "₦50,000+",
       statLabel: "orders unlock free delivery automatically",
       supportTitle: "Homepage without the catalogue overload",
@@ -99,8 +103,8 @@ export default function HomePage() {
       secondaryLabel: "View Best Sellers",
       secondaryHref: "/#best-sellers",
       highlights: ["No white cast picks", "Soft finish textures", "Responsive shopping layout"],
-      product: products[5],
-      secondaryProduct: products[4],
+      product: pickProduct(5),
+      secondaryProduct: pickProduct(4),
       statValue: "3 Core Steps",
       statLabel: "cleanse, treat, and protect without clutter",
       supportTitle: "Better section balance",
@@ -117,10 +121,10 @@ export default function HomePage() {
         "Start with radiance-first treatment, build in softness, and keep the finish polished from morning through night.",
       href: "/shop/golden-rose-serum",
       cta: "Shop Brightening Edit",
-      product: products[0],
+      product: pickProduct(0),
       tags: ["Dark spots", "Daily glow", "Serum-led routine"],
       surface: "bg-[#f6e8de]",
-      supportingProducts: [products[1], products[2]]
+      supportingProducts: [pickProduct(1), pickProduct(2)]
     },
     {
       eyebrow: "Calm + Reset",
@@ -128,7 +132,7 @@ export default function HomePage() {
       copy: "Low-stress cleansers and calming layers for shoppers focused on comfort, balance, and better barrier support.",
       href: "/shop/aloe-clarity-cleanser",
       cta: "Build Calm Routine",
-      product: products[3],
+      product: pickProduct(3),
       tags: ["Sensitive skin", "Barrier care", "Everyday cleanse"],
       surface: "bg-[#eef4ee]"
     },
@@ -138,7 +142,7 @@ export default function HomePage() {
       copy: "Hydration and SPF picks designed to sit cleanly under makeup or on bare skin without a heavy finish.",
       href: "/shop/dew-shield-spf-50",
       cta: "Shop Daily Defense",
-      product: products[5],
+      product: pickProduct(5),
       tags: ["No white cast", "SPF 50", "Daytime shelf"],
       surface: "bg-[#f5eee5]"
     }
