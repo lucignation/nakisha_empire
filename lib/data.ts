@@ -20,6 +20,9 @@ export interface Product {
   brand: string;
   size: string;
   price: number;
+  salePrice?: number | null;
+  promoStartsAt?: string | null;
+  promoEndsAt?: string | null;
   rating: number;
   reviewCount: string;
   badge: string;
@@ -124,6 +127,9 @@ export const products: Product[] = [
     brand: "Nakisha Signature",
     size: "30ml",
     price: 28500,
+    salePrice: 24500,
+    promoStartsAt: "2026-05-01T00:00:00.000Z",
+    promoEndsAt: "2026-05-31T23:59:59.000Z",
     rating: 4.9,
     reviewCount: "1.2k",
     badge: "Bestseller",
@@ -264,6 +270,9 @@ export const products: Product[] = [
     brand: "Daily Defense",
     size: "50ml",
     price: 19500,
+    salePrice: 16500,
+    promoStartsAt: "2026-05-01T00:00:00.000Z",
+    promoEndsAt: "2026-05-31T23:59:59.000Z",
     rating: 4.8,
     reviewCount: "680",
     badge: "Editor Pick",
@@ -420,6 +429,49 @@ export function formatCurrency(value: number): string {
     currency: "NGN",
     maximumFractionDigits: 0
   }).format(value);
+}
+
+function isWithinPromoWindow(product: Product, now = new Date()) {
+  const startsAt = product.promoStartsAt ? new Date(product.promoStartsAt) : null;
+  const endsAt = product.promoEndsAt ? new Date(product.promoEndsAt) : null;
+
+  if (startsAt && Number.isNaN(startsAt.getTime())) {
+    return false;
+  }
+
+  if (endsAt && Number.isNaN(endsAt.getTime())) {
+    return false;
+  }
+
+  if (startsAt && now < startsAt) {
+    return false;
+  }
+
+  if (endsAt && now > endsAt) {
+    return false;
+  }
+
+  return true;
+}
+
+export function isProductOnSale(product: Product, now = new Date()): boolean {
+  if (typeof product.salePrice !== "number") {
+    return false;
+  }
+
+  if (product.salePrice <= 0 || product.salePrice >= product.price) {
+    return false;
+  }
+
+  return isWithinPromoWindow(product, now);
+}
+
+export function getEffectivePrice(product: Product, now = new Date()): number {
+  return isProductOnSale(product, now) && typeof product.salePrice === "number" ? product.salePrice : product.price;
+}
+
+export function getDiscountAmount(product: Product, now = new Date()): number {
+  return isProductOnSale(product, now) ? product.price - getEffectivePrice(product, now) : 0;
 }
 
 export function isProductAvailable(product: Product): boolean {

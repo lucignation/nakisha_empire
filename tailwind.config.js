@@ -50,12 +50,12 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))"
         },
         blush: {
-          50: "#fff7f8",
-          100: "#fce8ef",
-          200: "#f6d2dd",
-          300: "#ecb8cb",
-          400: "#dd92ae",
-          500: "#c96d92"
+          50: "#fcf8f8",
+          100: "#fbefef",
+          200: "#f9dfdf",
+          300: "#f7c9c9",
+          400: "#f5afaf",
+          500: "#dd8d8d"
         },
         lavender: {
           50: "#f8f6fc",
@@ -65,11 +65,11 @@ module.exports = {
           400: "#a997d1"
         },
         gold: {
-          100: "#f6eccc",
-          200: "#eadbae",
-          300: "#ddc37f",
-          400: "#c9a84c",
-          500: "#9c7530"
+          100: "#fcf8f8",
+          200: "#fbefef",
+          300: "#f9dfdf",
+          400: "#f7c9c9",
+          500: "#f5afaf"
         },
         sage: {
           100: "#eef7f1",
@@ -88,12 +88,12 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)"
       },
       boxShadow: {
-        glow: "0 22px 70px rgba(168, 116, 142, 0.18)",
-        soft: "0 14px 35px rgba(90, 65, 76, 0.08)"
+        glow: "0 22px 70px rgba(245, 175, 175, 0.22)",
+        soft: "0 14px 35px rgba(114, 86, 86, 0.08)"
       },
       backgroundImage: {
         "hero-glow":
-          "linear-gradient(135deg, rgba(252, 232, 239, 0.96), rgba(253, 248, 244, 0.92) 58%, rgba(241, 236, 248, 0.96))",
+          "linear-gradient(135deg, rgba(252, 248, 248, 0.96), rgba(251, 239, 239, 0.92) 58%, rgba(249, 223, 223, 0.96))",
         "spotlight-radial":
           "radial-gradient(circle at center, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 70%)"
       },

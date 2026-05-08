@@ -10,12 +10,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getEffectivePrice } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
 type PaymentGateway = "paystack" | "flutterwave";
 
 interface CheckoutPaymentPanelProps {
+  subtotal: number;
+  shipping: number;
+  discountAmount: number;
   total: number;
+  promoCode?: string | null;
 }
 
 const gatewayCopy: Record<
@@ -46,7 +51,13 @@ function getPaystackClient() {
   return window.Paystack ?? window.PaystackPop;
 }
 
-export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProps) {
+export default function CheckoutPaymentPanel({
+  subtotal,
+  shipping,
+  discountAmount,
+  total,
+  promoCode
+}: CheckoutPaymentPanelProps) {
   const { items, clearCart } = useCart();
   const [gateway, setGateway] = useState<PaymentGateway>("paystack");
   const [customerName, setCustomerName] = useState("");
@@ -225,6 +236,51 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
     }
   }
 
+  async function createOrder(input: {
+    gateway: "PAYSTACK" | "FLUTTERWAVE";
+    paymentReference: string;
+    transactionId?: number;
+  }) {
+    const response = await fetch("/api/orders/complete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        gateway: input.gateway,
+        customerName: customerName.trim(),
+        customerEmail: customerEmail.trim(),
+        customerPhone: phoneNumber.trim() || null,
+        paymentReference: input.paymentReference,
+        transactionId: input.transactionId,
+        subtotalAmount: subtotal,
+        discountAmount,
+        shippingAmount: shipping,
+        totalAmount: total,
+        promoCode,
+        items: items.map((item) => ({
+          productId: item.id ?? null,
+          slug: item.slug,
+          name: item.name,
+          quantity: item.quantity,
+          price: getEffectivePrice(item)
+        }))
+      })
+    });
+
+    const payload = (await response.json()) as {
+      success?: boolean;
+      message?: string;
+      orderNumber?: string;
+    };
+
+    if (!response.ok || !payload.success || !payload.orderNumber) {
+      throw new Error(payload.message ?? "Unable to store the order after payment.");
+    }
+
+    return payload.orderNumber;
+  }
+
   async function handlePaystackCheckout() {
     if (!validatePaymentDetails()) {
       return;
@@ -268,10 +324,14 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
 
           try {
             await verifyPaystack(verifiedReference);
+            const orderNumber = await createOrder({
+              gateway: "PAYSTACK",
+              paymentReference: verifiedReference
+            });
             paymentHandledRef.current = true;
             clearCart();
             toast.success("Paystack payment verified", {
-              description: "Your payment was confirmed and the order is ready for fulfilment."
+              description: `Order ${orderNumber} was created. Use it on the Track Order page to follow fulfilment.`
             });
           } catch (error) {
             toast.error("Paystack payment needs attention", {
@@ -344,10 +404,15 @@ export default function CheckoutPaymentPanel({ total }: CheckoutPaymentPanelProp
             }
 
             await verifyFlutterwave(Number(payment.transaction_id), txRef);
+            const orderNumber = await createOrder({
+              gateway: "FLUTTERWAVE",
+              paymentReference: txRef,
+              transactionId: Number(payment.transaction_id)
+            });
             paymentHandledRef.current = true;
             clearCart();
             toast.success("Flutterwave payment verified", {
-              description: "Your payment was confirmed and the order is ready for fulfilment."
+              description: `Order ${orderNumber} was created. Use it on the Track Order page to follow fulfilment.`
             });
           } catch (error) {
             toast.error("Flutterwave payment needs attention", {

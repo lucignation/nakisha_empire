@@ -2,7 +2,17 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export const productCreateSchema = z.object({
+const optionalNumberField = z.preprocess(
+  (value) => (value === "" || value === null || typeof value === "undefined" ? undefined : value),
+  z.coerce.number().int().nonnegative().optional()
+);
+
+const optionalDateField = z.preprocess(
+  (value) => (value === "" || value === null || typeof value === "undefined" ? undefined : value),
+  z.coerce.date().optional()
+);
+
+const baseProductSchema = z.object({
   name: z.string().min(2),
   slug: z.string().optional(),
   shortDescription: z.string().min(8),
@@ -11,6 +21,9 @@ export const productCreateSchema = z.object({
   brand: z.string().min(2),
   size: z.string().min(1),
   price: z.coerce.number().int().nonnegative(),
+  salePrice: optionalNumberField.nullish(),
+  promoStartsAt: optionalDateField.nullish(),
+  promoEndsAt: optionalDateField.nullish(),
   badge: z.string().optional().default("New"),
   collection: z.string().min(2),
   skinGoal: z.string().min(2),
@@ -22,30 +35,57 @@ export const productCreateSchema = z.object({
   trackInventory: z.boolean().default(true),
   stockQuantity: z.coerce.number().int().nonnegative().default(0),
   isOutOfStock: z.boolean().default(false),
-  imageUrl: z.string().url(),
-  cloudinaryPublicId: z.string().optional().nullable()
 });
 
-export const productUpdateSchema = z.object({
-  name: z.string().min(2),
-  shortDescription: z.string().min(8),
-  description: z.string().min(20),
-  category: z.string().min(2),
-  brand: z.string().min(2),
-  size: z.string().min(1),
-  price: z.coerce.number().int().nonnegative(),
-  badge: z.string().optional().default("Featured"),
-  collection: z.string().min(2),
-  skinGoal: z.string().min(2),
-  highlights: z.array(z.string().min(1)).min(1),
-  ingredients: z.array(z.string().min(1)).min(1),
-  howToUse: z.string().min(8),
-  sku: z.string().optional().nullable(),
-  isPublished: z.boolean().default(false),
-  trackInventory: z.boolean().default(true),
-  stockQuantity: z.coerce.number().int().nonnegative().default(0),
-  isOutOfStock: z.boolean().default(false)
-});
+function refinePricing<T extends z.ZodTypeAny>(schema: T) {
+  return schema.superRefine((data, ctx) => {
+    const payload = data as {
+      price: number;
+      salePrice?: number | null;
+      promoStartsAt?: Date | null;
+      promoEndsAt?: Date | null;
+    };
+
+    if (typeof payload.salePrice === "number" && payload.salePrice >= payload.price) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["salePrice"],
+        message: "Promo price must be lower than the regular price."
+      });
+    }
+
+    if ((payload.promoStartsAt && !payload.promoEndsAt) || (!payload.promoStartsAt && payload.promoEndsAt)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["promoEndsAt"],
+        message: "Add both promo start and promo end dates for a scheduled sale."
+      });
+    }
+
+    if (payload.promoStartsAt && payload.promoEndsAt && payload.promoEndsAt <= payload.promoStartsAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["promoEndsAt"],
+        message: "Promo end date must be after the promo start date."
+      });
+    }
+  });
+}
+
+export const productCreateSchema = refinePricing(
+  baseProductSchema.extend({
+    imageUrl: z.string().url(),
+    cloudinaryPublicId: z.string().optional().nullable()
+  })
+);
+
+export const productUpdateSchema = refinePricing(
+  baseProductSchema.omit({
+    slug: true
+  }).extend({
+    badge: z.string().optional().default("Featured")
+  })
+);
 
 export type ProductCreateInput = z.infer<typeof productCreateSchema>;
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;

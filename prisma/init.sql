@@ -14,6 +14,15 @@ CREATE TYPE "PaymentGateway" AS ENUM (
   'FLUTTERWAVE'
 );
 
+CREATE TYPE "PromoDiscountType" AS ENUM (
+  'PERCENTAGE',
+  'FIXED'
+);
+
+CREATE TYPE "AdminRole" AS ENUM (
+  'SUPER_ADMIN'
+);
+
 CREATE TABLE "Product" (
   "id" TEXT NOT NULL,
   "slug" TEXT NOT NULL,
@@ -24,6 +33,9 @@ CREATE TABLE "Product" (
   "brand" TEXT NOT NULL,
   "size" TEXT NOT NULL,
   "price" INTEGER NOT NULL,
+  "salePrice" INTEGER,
+  "promoStartsAt" TIMESTAMP(3),
+  "promoEndsAt" TIMESTAMP(3),
   "rating" DOUBLE PRECISION NOT NULL DEFAULT 0,
   "reviewCount" INTEGER NOT NULL DEFAULT 0,
   "badge" TEXT,
@@ -67,8 +79,10 @@ CREATE TABLE "Order" (
   "paymentGateway" "PaymentGateway",
   "paymentReference" TEXT,
   "subtotalAmount" INTEGER NOT NULL,
+  "discountAmount" INTEGER NOT NULL DEFAULT 0,
   "shippingAmount" INTEGER NOT NULL,
   "totalAmount" INTEGER NOT NULL,
+  "promoCode" TEXT,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL,
   CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
@@ -86,6 +100,34 @@ CREATE TABLE "OrderItem" (
   CONSTRAINT "OrderItem_pkey" PRIMARY KEY ("id")
 );
 
+CREATE TABLE "AdminUser" (
+  "id" TEXT NOT NULL,
+  "email" TEXT NOT NULL,
+  "passwordHash" TEXT NOT NULL,
+  "role" "AdminRole" NOT NULL DEFAULT 'SUPER_ADMIN',
+  "lastLoginAt" TIMESTAMP(3),
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "AdminUser_pkey" PRIMARY KEY ("id")
+);
+
+CREATE TABLE "PromoCode" (
+  "id" TEXT NOT NULL,
+  "code" TEXT NOT NULL,
+  "description" TEXT,
+  "discountType" "PromoDiscountType" NOT NULL,
+  "amount" INTEGER NOT NULL,
+  "minOrderAmount" INTEGER,
+  "startsAt" TIMESTAMP(3),
+  "endsAt" TIMESTAMP(3),
+  "isActive" BOOLEAN NOT NULL DEFAULT true,
+  "usageLimit" INTEGER,
+  "usageCount" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "PromoCode_pkey" PRIMARY KEY ("id")
+);
+
 CREATE UNIQUE INDEX "Product_slug_key" ON "Product"("slug");
 CREATE UNIQUE INDEX "Product_sku_key" ON "Product"("sku");
 CREATE INDEX "Product_isPublished_createdAt_idx" ON "Product"("isPublished", "createdAt");
@@ -100,6 +142,10 @@ CREATE INDEX "Order_status_createdAt_idx" ON "Order"("status", "createdAt");
 
 CREATE INDEX "OrderItem_orderId_idx" ON "OrderItem"("orderId");
 CREATE INDEX "OrderItem_productId_idx" ON "OrderItem"("productId");
+CREATE UNIQUE INDEX "AdminUser_email_key" ON "AdminUser"("email");
+CREATE INDEX "AdminUser_email_role_idx" ON "AdminUser"("email", "role");
+CREATE UNIQUE INDEX "PromoCode_code_key" ON "PromoCode"("code");
+CREATE INDEX "PromoCode_code_isActive_idx" ON "PromoCode"("code", "isActive");
 
 ALTER TABLE "InventoryLog"
 ADD CONSTRAINT "InventoryLog_productId_fkey"

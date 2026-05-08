@@ -13,6 +13,7 @@ const navItems = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
   { href: "/#categories", label: "Categories" },
+  { href: "/track", label: "Track Order" },
   { href: "/consultation", label: "Consultation" },
   { href: "/blog", label: "Blog" }
 ];
@@ -22,10 +23,10 @@ export default function SiteHeader() {
   const { itemCount } = useCart();
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-[#eadfce] bg-[rgba(250,246,241,0.96)] backdrop-blur-xl">
-      <div className="container flex min-h-[72px] items-center gap-4">
-        <Link className="shrink-0 font-display text-[1.65rem] font-semibold tracking-[0.04em] text-foreground" href="/">
-          Nakisha <span className="text-gold-500">Empire</span>
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-[var(--brand-border)] bg-[rgba(255,255,255,0.96)] backdrop-blur-xl">
+      <div className="container flex min-h-[68px] items-center gap-4">
+        <Link className="shrink-0 font-display text-[1.5rem] font-semibold tracking-[0.01em] text-foreground" href="/">
+          Nakisha <span className="text-[var(--brand-accent-strong)]">Empire</span>
         </Link>
 
         <nav className="hidden items-center gap-1 lg:flex">
@@ -35,8 +36,8 @@ export default function SiteHeader() {
             return (
               <Link
                 className={cn(
-                  "rounded-[4px] px-3 py-2 text-[0.76rem] font-semibold uppercase tracking-[0.12em] text-[#6b4f3a] transition-colors hover:bg-[#f0e2c8] hover:text-gold-500",
-                  active && "bg-[#f0e2c8] text-gold-500"
+                  "rounded-[10px] px-3 py-2 text-[0.76rem] font-semibold uppercase tracking-[0.12em] text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-100)] hover:text-[var(--brand-accent-strong)]",
+                  active && "bg-[var(--brand-100)] text-[var(--brand-accent-strong)]"
                 )}
                 href={item.href}
                 key={item.href}
@@ -52,7 +53,7 @@ export default function SiteHeader() {
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8f7767]" />
             <Input
               aria-label="Search products"
-              className="h-11 border-[#e1d3c1] bg-white pl-11 text-[#2c1f17] placeholder:text-[#9c7f6e]"
+            className="h-11 rounded-xl border-[var(--brand-border)] bg-[var(--surface-muted)] pl-11 text-foreground placeholder:text-[var(--brand-ink-soft)]"
               placeholder="Search products, categories, brands..."
               type="search"
             />
@@ -62,27 +63,27 @@ export default function SiteHeader() {
         <div className="ml-auto flex items-center gap-2">
           <button
             aria-label="Search"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-[#6b4f3a] transition-colors hover:bg-[#f2ebe0] hover:text-gold-500 lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-100)] hover:text-[var(--brand-accent-strong)] lg:hidden"
             type="button"
           >
             <Search className="h-4 w-4" />
           </button>
 
-          <button
+          <Link
             aria-label="Account"
-            className="hidden h-10 w-10 items-center justify-center rounded-full text-[#6b4f3a] transition-colors hover:bg-[#f2ebe0] hover:text-gold-500 lg:flex"
-            type="button"
+            className="hidden h-10 w-10 items-center justify-center rounded-xl text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-100)] hover:text-[var(--brand-accent-strong)] lg:flex"
+            href="/account"
           >
             <User className="h-4 w-4" />
-          </button>
+          </Link>
 
           <Link
             aria-label="Cart"
-            className="relative flex h-10 w-10 items-center justify-center rounded-full text-[#6b4f3a] transition-colors hover:bg-[#f2ebe0] hover:text-gold-500"
+            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-100)] hover:text-[var(--brand-accent-strong)]"
             href="/cart"
           >
             <ShoppingBag className="h-4 w-4" />
-            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-500 px-1 text-[0.55rem] font-semibold text-white">
+            <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--brand-400)] px-1 text-[0.55rem] font-semibold text-[var(--brand-ink)]">
               {itemCount}
             </span>
           </Link>
@@ -91,29 +92,29 @@ export default function SiteHeader() {
             <SheetTrigger asChild>
               <button
                 aria-label="Menu"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-[#6b4f3a] transition-colors hover:bg-[#f2ebe0] hover:text-gold-500 lg:hidden"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-[var(--brand-ink)] transition-colors hover:bg-[var(--brand-100)] hover:text-[var(--brand-accent-strong)] lg:hidden"
                 type="button"
               >
                 <Menu className="h-5 w-5" />
               </button>
             </SheetTrigger>
-            <SheetContent className="border-l-[#eadfce] bg-[#faf6f1]" side="right">
+            <SheetContent className="border-l-[var(--brand-border)] bg-[var(--brand-50)]" side="right">
               <SheetHeader>
                 <SheetTitle className="font-display text-3xl font-semibold">Nakisha Empire</SheetTitle>
                 <SheetDescription>Browse products, categories, and quick links from one menu.</SheetDescription>
               </SheetHeader>
               <div className="mt-6">
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8f7767]" />
-                  <Input className="border-[#e1d3c1] bg-white pl-11" placeholder="Search products..." type="search" />
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--brand-ink-soft)]" />
+                  <Input className="border-[var(--brand-border)] bg-white pl-11" placeholder="Search products..." type="search" />
                 </div>
               </div>
-              <Separator className="my-6 bg-[#eadfce]" />
+              <Separator className="my-6 bg-[var(--brand-border)]" />
               <div className="grid gap-3">
                 {navItems.map((item) => (
                   <SheetClose asChild key={item.href}>
                     <Link
-                      className="rounded-[6px] border border-transparent px-4 py-3 text-[0.76rem] font-semibold uppercase tracking-[0.12em] text-[#6b4f3a] transition-colors hover:border-[#e1d3c1] hover:bg-white"
+                      className="rounded-[6px] border border-transparent px-4 py-3 text-[0.76rem] font-semibold uppercase tracking-[0.12em] text-[var(--brand-ink)] transition-colors hover:border-[var(--brand-border)] hover:bg-white"
                       href={item.href}
                     >
                       {item.label}
@@ -121,7 +122,15 @@ export default function SiteHeader() {
                   </SheetClose>
                 ))}
               </div>
-              <Separator className="my-6 bg-[#eadfce]" />
+              <Separator className="my-6 bg-[var(--brand-border)]" />
+              <SheetClose asChild>
+                <Link
+                  className="mb-3 inline-flex items-center justify-center rounded-[4px] border border-[var(--brand-border)] bg-white px-5 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-[var(--brand-ink)]"
+                  href="/account"
+                >
+                  Account
+                </Link>
+              </SheetClose>
               <SheetClose asChild>
                 <Link
                   className="inline-flex items-center justify-center rounded-[4px] bg-foreground px-5 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.14em] text-background"
@@ -135,13 +144,13 @@ export default function SiteHeader() {
         </div>
       </div>
 
-      <div className="border-t border-[#f0e8dc] lg:hidden">
+      <div className="border-t border-[var(--brand-border)] lg:hidden">
         <div className="container py-3">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8f7767]" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--brand-ink-soft)]" />
             <Input
               aria-label="Search products"
-              className="h-11 border-[#e1d3c1] bg-white pl-11 text-[#2c1f17] placeholder:text-[#9c7f6e]"
+              className="h-11 rounded-xl border-[var(--brand-border)] bg-[var(--surface-muted)] pl-11 text-foreground placeholder:text-[var(--brand-ink-soft)]"
               placeholder="Search products, categories, brands..."
               type="search"
             />

@@ -20,6 +20,15 @@ enum PaymentGateway {
   FLUTTERWAVE
 }
 
+enum PromoDiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+}
+
 model Product {
   id                String         @id @default(cuid())
   slug              String         @unique
@@ -30,6 +39,9 @@ model Product {
   brand             String
   size              String
   price             Int
+  salePrice         Int?
+  promoStartsAt     DateTime?
+  promoEndsAt       DateTime?
   rating            Float          @default(0)
   reviewCount       Int            @default(0)
   badge             String?
@@ -79,8 +91,10 @@ model Order {
   paymentGateway   PaymentGateway?
   paymentReference String?        @unique
   subtotalAmount   Int
+  discountAmount   Int            @default(0)
   shippingAmount   Int
   totalAmount      Int
+  promoCode        String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   items            OrderItem[]
@@ -103,4 +117,34 @@ model OrderItem {
 
   @@index([orderId])
   @@index([productId])
+}
+
+model AdminUser {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  passwordHash String
+  role        AdminRole @default(SUPER_ADMIN)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([email, role])
+}
+
+model PromoCode {
+  id             String            @id @default(cuid())
+  code           String            @unique
+  description    String?
+  discountType   PromoDiscountType
+  amount         Int
+  minOrderAmount Int?
+  startsAt       DateTime?
+  endsAt         DateTime?
+  isActive       Boolean           @default(true)
+  usageLimit     Int?
+  usageCount     Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([code, isActive])
 }

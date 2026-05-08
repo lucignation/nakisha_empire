@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrency, isProductAvailable } from "@/lib/data";
+import { formatCurrency, getEffectivePrice, isProductAvailable, isProductOnSale } from "@/lib/data";
 import { getStorefrontProductBySlug, getStorefrontProducts } from "@/lib/server/products";
 
 interface ProductPageProps {
@@ -47,6 +47,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
     .sort((left, right) => Number(right.collection === product.collection) - Number(left.collection === product.collection))
     .slice(0, 3);
   const available = isProductAvailable(product);
+  const effectivePrice = getEffectivePrice(product);
+  const onSale = isProductOnSale(product);
 
   return (
     <>
@@ -101,7 +103,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </div>
                 </div>
 
-                <p className="font-display text-4xl font-medium text-gold-500 sm:text-5xl">{formatCurrency(product.price)}</p>
+                <div className="space-y-1">
+                  {onSale ? (
+                    <p className="text-sm uppercase tracking-[0.18em] text-muted-foreground line-through">{formatCurrency(product.price)}</p>
+                  ) : null}
+                  <p className="font-display text-4xl font-medium text-gold-500 sm:text-5xl">{formatCurrency(effectivePrice)}</p>
+                </div>
                 <p className="text-sm font-medium text-[#8f7767]">{available ? "In stock" : "Currently out of stock"}</p>
 
                 <div className="space-y-3">

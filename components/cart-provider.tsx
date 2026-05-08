@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { isProductAvailable, type Product } from "@/lib/data";
+import { getEffectivePrice, isProductAvailable, type Product } from "@/lib/data";
 
 const STORAGE_KEY = "nakisha-empire-cart";
 
@@ -53,7 +53,7 @@ export function CartProvider({ children }: CartProviderProps) {
 
   const value = useMemo<CartContextValue>(() => {
     const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const subtotal = items.reduce((sum, item) => sum + getEffectivePrice(item) * item.quantity, 0);
 
     function addItem(product: Product) {
       if (!isProductAvailable(product)) {
@@ -63,6 +63,12 @@ export function CartProvider({ children }: CartProviderProps) {
       setItems((currentItems) => {
         const existing = currentItems.find((entry) => entry.slug === product.slug);
         if (existing) {
+          const maxQuantity = product.trackInventory ? product.stockQuantity ?? existing.quantity + 1 : Number.POSITIVE_INFINITY;
+
+          if (existing.quantity >= maxQuantity) {
+            return currentItems;
+          }
+
           return currentItems.map((entry) =>
             entry.slug === product.slug ? { ...entry, quantity: entry.quantity + 1 } : entry
           );
@@ -83,7 +89,14 @@ export function CartProvider({ children }: CartProviderProps) {
       }
 
       setItems((currentItems) =>
-        currentItems.map((entry) => (entry.slug === slug ? { ...entry, quantity } : entry))
+        currentItems.map((entry) => {
+          if (entry.slug !== slug) {
+            return entry;
+          }
+
+          const maxQuantity = entry.trackInventory ? entry.stockQuantity ?? quantity : Number.POSITIVE_INFINITY;
+          return { ...entry, quantity: Math.min(quantity, maxQuantity) };
+        })
       );
     }
 

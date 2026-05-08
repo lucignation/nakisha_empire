@@ -4,28 +4,43 @@
 
 @layer base {
   :root {
-    --background: 34 43% 97%;
-    --foreground: 20 31% 13%;
-    --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+    --brand-50: #fcf8f8;
+    --brand-100: #fbefef;
+    --brand-200: #f9dfdf;
+    --brand-300: #FF70BF;
+    --brand-400: #D552A3;
+    --brand-500: #831C91;
+    --brand-ink: #462C7D;
+    --brand-ink-soft: #7c6262;
+    --brand-border: #edd8d8;
+    --surface-base: #ffffff;
+    --surface-muted: #fcf8f8;
+    --surface-soft: #fbefef;
+    --shadow-soft: 0 16px 38px rgba(77, 53, 53, 0.06);
+    --shadow-card: 0 10px 24px rgba(77, 53, 53, 0.05);
+    --background: 0 43% 98%;
+    --foreground: 0 19% 25%;
+    --font-display: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
     --card: 0 0% 100%;
-    --card-foreground: 20 31% 13%;
+    --card-foreground: 0 19% 25%;
     --popover: 0 0% 100%;
-    --popover-foreground: 20 31% 13%;
-    --primary: 38 43% 50%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 21 32% 27%;
-    --secondary-foreground: 34 43% 97%;
-    --muted: 34 32% 92%;
-    --muted-foreground: 26 21% 35%;
-    --accent: 35 48% 87%;
-    --accent-foreground: 20 31% 13%;
+    --popover-foreground: 0 19% 25%;
+    --primary: 0 78% 82%;
+    --primary-foreground: 0 19% 25%;
+    --secondary: 0 19% 25%;
+    --secondary-foreground: 0 43% 98%;
+    --muted: 0 57% 96%;
+    --muted-foreground: 0 17% 43%;
+    --accent: 0 67% 93%;
+    --accent-foreground: 0 19% 25%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 38 35% 78%;
-    --input: 38 35% 78%;
-    --ring: 38 43% 50%;
-    --radius: 1rem;
+    --border: 0 42% 89%;
+    --input: 0 42% 89%;
+    --ring: 0 78% 82%;
+    --radius: 0.875rem;
+    --brand-accent-strong: var(--brand-500);
   }
 
   * {
@@ -42,7 +57,7 @@
   }
 
   ::selection {
-    background: rgba(201, 168, 76, 0.22);
+    background: rgba(245, 175, 175, 0.3);
     color: hsl(var(--foreground));
   }
 }

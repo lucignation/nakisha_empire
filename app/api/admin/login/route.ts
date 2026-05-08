@@ -3,7 +3,7 @@ import { z } from "zod";
 import {
   ADMIN_SESSION_COOKIE,
   createAdminSessionToken,
-  isSuperAdminConfigured,
+  markAdminLogin,
   validateSuperAdminCredentials
 } from "@/lib/server/admin-auth";
 
@@ -14,19 +14,9 @@ const loginSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    if (!isSuperAdminConfigured()) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Super-admin credentials are not configured yet."
-        },
-        { status: 500 }
-      );
-    }
-
     const body = loginSchema.parse(await request.json());
 
-    if (!validateSuperAdminCredentials(body.email, body.password)) {
+    if (!(await validateSuperAdminCredentials(body.email, body.password))) {
       return NextResponse.json(
         {
           success: false,
@@ -39,6 +29,8 @@ export async function POST(request: Request) {
     const response = NextResponse.json({
       success: true
     });
+
+    await markAdminLogin(body.email);
 
     response.cookies.set(ADMIN_SESSION_COOKIE, createAdminSessionToken(body.email), {
       httpOnly: true,

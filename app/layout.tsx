@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import SiteHeader from "@/components/site-header";
-import SiteFooter from "@/components/site-footer";
+import AppShell from "@/components/app-shell";
 import { CartProvider } from "@/components/cart-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -23,11 +22,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en">
       <body className="font-sans">
         <CartProvider>
-          <div className="min-h-screen">
-            <SiteHeader />
-            <main className="pt-[128px] lg:pt-[72px]">{children}</main>
-            <SiteFooter />
-          </div>
+          <AppShell>{children}</AppShell>
           <Toaster />
         </CartProvider>
       </body>
