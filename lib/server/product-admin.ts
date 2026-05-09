@@ -34,7 +34,12 @@ const baseProductSchema = z.object({
   isPublished: z.boolean().default(false),
   trackInventory: z.boolean().default(true),
   stockQuantity: z.coerce.number().int().nonnegative().default(0),
-  isOutOfStock: z.boolean().default(false),
+  isOutOfStock: z.boolean().default(false)
+});
+
+const productGalleryImageSchema = z.object({
+  url: z.string().url(),
+  publicId: z.string().optional().nullable()
 });
 
 function refinePricing<T extends z.ZodTypeAny>(schema: T) {
@@ -89,6 +94,7 @@ export const productUpdateSchema = refinePricing(
 
 export type ProductCreateInput = z.infer<typeof productCreateSchema>;
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
+export type ProductGalleryImage = z.infer<typeof productGalleryImageSchema>;
 
 export function resolveInventoryState(input: {
   trackInventory: boolean;
@@ -124,6 +130,32 @@ export function parseListField(value: string) {
     .split(/\r?\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+export function normalizeProductGalleryImages(value: unknown): ProductGalleryImage[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const parsed = productGalleryImageSchema.array().safeParse(value);
+  return parsed.success ? parsed.data : [];
+}
+
+export function parseProductGalleryImagesField(value: FormDataEntryValue | null) {
+  if (typeof value !== "string" || !value.trim()) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return normalizeProductGalleryImages(parsed);
+  } catch {
+    return [];
+  }
+}
+
+export function toProductGalleryImagesInput(images: ProductGalleryImage[]): Prisma.InputJsonValue {
+  return images as Prisma.InputJsonValue;
 }
 
 export async function ensureUniqueProductSlug(rawSlug: string, excludeId?: string) {

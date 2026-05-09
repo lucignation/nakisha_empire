@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { PaymentGateway } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { sendOrderReceivedEmail } from "@/lib/server/commerce-email";
 import { createInventoryLogIfNeeded } from "@/lib/server/product-admin";
 import { verifyFlutterwaveTransaction, verifyPaystackTransaction } from "@/lib/server/payment-verification";
 import { validatePromoCodeForOrder } from "@/lib/server/promos";
@@ -11,6 +12,9 @@ const checkoutOrderSchema = z.object({
   customerName: z.string().min(2),
   customerEmail: z.string().email(),
   customerPhone: z.string().optional().nullable(),
+  deliveryAddress: z.string().min(8),
+  deliveryStateCode: z.string().min(2),
+  deliveryStateName: z.string().min(2),
   paymentReference: z.string().min(3),
   transactionId: z.number().int().positive().optional(),
   subtotalAmount: z.number().int().nonnegative(),
@@ -32,10 +36,23 @@ const checkoutOrderSchema = z.object({
 });
 
 function generateOrderNumber() {
-  const now = new Date();
-  const dateStamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
-  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `NKE-${dateStamp}-${random}`;
+  return `NKE-${crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase()}`;
+}
+
+async function createUniqueOrderNumber() {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const orderNumber = generateOrderNumber();
+    const existingOrder = await prisma.order.findUnique({
+      where: { orderNumber },
+      select: { id: true }
+    });
+
+    if (!existingOrder) {
+      return orderNumber;
+    }
+  }
+
+  throw new Error("Unable to generate a unique order number right now.");
 }
 
 export async function POST(request: Request) {
@@ -155,7 +172,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const orderNumber = generateOrderNumber();
+    const orderNumber = await createUniqueOrderNumber();
 
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.order.create({
@@ -164,6 +181,9 @@ export async function POST(request: Request) {
           customerName: body.customerName.trim(),
           customerEmail: body.customerEmail.trim().toLowerCase(),
           customerPhone: body.customerPhone?.trim() || null,
+          deliveryAddress: body.deliveryAddress.trim(),
+          deliveryStateCode: body.deliveryStateCode.trim().toUpperCase(),
+          deliveryStateName: body.deliveryStateName.trim(),
           status: "PENDING",
           paymentGateway: body.gateway,
           paymentReference: body.paymentReference,
@@ -228,6 +248,10 @@ export async function POST(request: Request) {
       }
 
       return createdOrder;
+    });
+
+    void sendOrderReceivedEmail(order.id).catch((emailError) => {
+      console.error("Unable to send order confirmation email", emailError);
     });
 
     return NextResponse.json({

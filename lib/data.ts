@@ -29,6 +29,7 @@ export interface Product {
   emoji: string;
   accent: string;
   image: string;
+  images?: string[];
   cloudinaryPublicId?: string | null;
   skinGoal: string;
   collection: string;
@@ -76,6 +77,14 @@ export interface BrandValue {
   title: string;
   copy: string;
   icon: string;
+}
+
+export function getProductImages(product: Product) {
+  if (product.images?.length) {
+    return product.images;
+  }
+
+  return [product.image];
 }
 
 export const siteNavigation: SiteNavigationItem[] = [

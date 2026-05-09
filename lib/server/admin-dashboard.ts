@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { OrderStatus, PaymentGateway, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { Product } from "@/lib/data";
@@ -16,6 +17,9 @@ export interface AdminOrderRecord {
   customerName: string;
   customerEmail: string;
   customerPhone?: string | null;
+  deliveryAddress: string;
+  deliveryStateCode: string;
+  deliveryStateName: string;
   status: OrderStatus;
   paymentGateway?: PaymentGateway | null;
   paymentReference?: string | null;
@@ -67,6 +71,11 @@ export interface AdminDashboardData {
   recentInventoryLogs: InventoryActivityRecord[];
 }
 
+export interface AdminCustomerDetail {
+  customer: AdminCustomerRecord | null;
+  orders: AdminOrderRecord[];
+}
+
 function formatCurrencyValue(value: number) {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -80,6 +89,37 @@ function databaseIsConfigured() {
 }
 
 const orderSelect = {
+  id: true,
+  orderNumber: true,
+  customerName: true,
+  customerEmail: true,
+  customerPhone: true,
+  deliveryAddress: true,
+  deliveryStateCode: true,
+  deliveryStateName: true,
+  status: true,
+  paymentGateway: true,
+  paymentReference: true,
+  subtotalAmount: true,
+  discountAmount: true,
+  shippingAmount: true,
+  totalAmount: true,
+  promoCode: true,
+  createdAt: true,
+  updatedAt: true,
+  items: {
+    select: {
+      id: true,
+      productId: true,
+      productName: true,
+      quantity: true,
+      unitPrice: true,
+      totalPrice: true
+    }
+  }
+} satisfies Prisma.OrderSelect;
+
+const legacyOrderSelect = {
   id: true,
   orderNumber: true,
   customerName: true,
@@ -107,13 +147,25 @@ const orderSelect = {
   }
 } satisfies Prisma.OrderSelect;
 
-function mapOrder(record: Prisma.OrderGetPayload<{ select: typeof orderSelect }>): AdminOrderRecord {
+type OrderRecord =
+  | Prisma.OrderGetPayload<{ select: typeof orderSelect }>
+  | Prisma.OrderGetPayload<{ select: typeof legacyOrderSelect }>;
+let orderQueryMode: "full" | "legacy" = "full";
+
+function isMissingColumnError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022";
+}
+
+function mapOrder(record: OrderRecord): AdminOrderRecord {
   return {
     id: record.id,
     orderNumber: record.orderNumber,
     customerName: record.customerName,
     customerEmail: record.customerEmail,
     customerPhone: record.customerPhone,
+    deliveryAddress: "deliveryAddress" in record ? record.deliveryAddress : "",
+    deliveryStateCode: "deliveryStateCode" in record ? record.deliveryStateCode : "",
+    deliveryStateName: "deliveryStateName" in record ? record.deliveryStateName : "",
     status: record.status,
     paymentGateway: record.paymentGateway,
     paymentReference: record.paymentReference,
@@ -135,28 +187,141 @@ function mapOrder(record: Prisma.OrderGetPayload<{ select: typeof orderSelect }>
   };
 }
 
-export async function getAdminOrders(limit = 50): Promise<AdminOrderRecord[]> {
+export async function getAdminOrders(limit?: number): Promise<AdminOrderRecord[]> {
+  noStore();
+
   if (!databaseIsConfigured()) {
     return [];
+  }
+
+  if (orderQueryMode === "legacy") {
+    try {
+      const legacyOrders = await prisma.order.findMany({
+        orderBy: [{ createdAt: "desc" }],
+        ...(typeof limit === "number" ? { take: limit } : {}),
+        select: legacyOrderSelect
+      });
+
+      return legacyOrders.map(mapOrder);
+    } catch (legacyError) {
+      console.error("Unable to query orders from Prisma/Neon using the legacy schema fallback", legacyError);
+      return [];
+    }
   }
 
   try {
     const orders = await prisma.order.findMany({
       orderBy: [{ createdAt: "desc" }],
-      take: limit,
+      ...(typeof limit === "number" ? { take: limit } : {}),
       select: orderSelect
     });
 
     return orders.map(mapOrder);
   } catch (error) {
+    if (isMissingColumnError(error)) {
+      orderQueryMode = "legacy";
+
+      try {
+        const legacyOrders = await prisma.order.findMany({
+          orderBy: [{ createdAt: "desc" }],
+          ...(typeof limit === "number" ? { take: limit } : {}),
+          select: legacyOrderSelect
+        });
+
+        return legacyOrders.map(mapOrder);
+      } catch (legacyError) {
+        console.error("Unable to query orders from Prisma/Neon using the legacy schema fallback", legacyError);
+        return [];
+      }
+    }
+
     console.error("Unable to query orders from Prisma/Neon", error);
     return [];
   }
 }
 
+export async function getAdminOrderById(id: string): Promise<AdminOrderRecord | null> {
+  noStore();
+
+  if (!databaseIsConfigured()) {
+    return null;
+  }
+
+  if (orderQueryMode === "legacy") {
+    try {
+      const legacyOrder = await prisma.order.findUnique({
+        where: { id },
+        select: legacyOrderSelect
+      });
+
+      return legacyOrder ? mapOrder(legacyOrder) : null;
+    } catch (legacyError) {
+      console.error(`Unable to query order ${id} from Prisma/Neon using the legacy schema fallback`, legacyError);
+      return null;
+    }
+  }
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      select: orderSelect
+    });
+
+    return order ? mapOrder(order) : null;
+  } catch (error) {
+    if (isMissingColumnError(error)) {
+      orderQueryMode = "legacy";
+
+      try {
+        const legacyOrder = await prisma.order.findUnique({
+          where: { id },
+          select: legacyOrderSelect
+        });
+
+        return legacyOrder ? mapOrder(legacyOrder) : null;
+      } catch (legacyError) {
+        console.error(`Unable to query order ${id} from Prisma/Neon using the legacy schema fallback`, legacyError);
+        return null;
+      }
+    }
+
+    console.error(`Unable to query order ${id} from Prisma/Neon`, error);
+    return null;
+  }
+}
+
+export async function getAdminCustomerByEmail(email: string): Promise<AdminCustomerDetail> {
+  noStore();
+  const orders = (await getAdminOrders()).filter((order) => order.customerEmail.toLowerCase() === email.toLowerCase());
+
+  if (orders.length === 0) {
+    return {
+      customer: null,
+      orders: []
+    };
+  }
+
+  const latestOrder = [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+  const totalSpent = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+  return {
+    customer: {
+      email: latestOrder.customerEmail,
+      name: latestOrder.customerName,
+      phone: latestOrder.customerPhone,
+      ordersCount: orders.length,
+      totalSpent,
+      lastOrderAt: latestOrder.createdAt,
+      latestStatus: latestOrder.status
+    },
+    orders
+  };
+}
+
 export async function getAdminDashboardData(input: {
   recentInventoryLogs: InventoryActivityRecord[];
 }): Promise<AdminDashboardData> {
+  noStore();
   const [products, orders] = await Promise.all([getAdminProducts(), getAdminOrders()]);
 
   const inventory = products

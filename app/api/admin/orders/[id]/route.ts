@@ -3,6 +3,7 @@ import { OrderStatus } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromCookies } from "@/lib/server/admin-auth";
+import { sendOrderInTransitEmail } from "@/lib/server/commerce-email";
 
 const orderStatusSchema = z.object({
   status: z.nativeEnum(OrderStatus)
@@ -21,6 +22,23 @@ export async function PATCH(request: Request, context: { params: { id: string } 
     }
 
     const body = orderStatusSchema.parse(await request.json());
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: context.params.id },
+      select: {
+        id: true,
+        status: true
+      }
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Order not found."
+        },
+        { status: 404 }
+      );
+    }
 
     const updatedOrder = await prisma.order.update({
       where: { id: context.params.id },
@@ -33,6 +51,12 @@ export async function PATCH(request: Request, context: { params: { id: string } 
         status: true
       }
     });
+
+    if (existingOrder.status !== body.status && body.status === "SHIPPED") {
+      void sendOrderInTransitEmail(updatedOrder.id).catch((emailError) => {
+        console.error("Unable to send in-transit email", emailError);
+      });
+    }
 
     return NextResponse.json({
       success: true,

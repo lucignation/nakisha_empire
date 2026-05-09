@@ -50,32 +50,32 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))"
         },
         blush: {
-          50: "#fcf8f8",
-          100: "#fbefef",
-          200: "#f9dfdf",
-          300: "#f7c9c9",
-          400: "#f5afaf",
-          500: "#dd8d8d"
+          50: "#f7f2fd",
+          100: "#efe5fa",
+          200: "#e6d6f7",
+          300: "#ff70bf",
+          400: "#d552a3",
+          500: "#831c91"
         },
         lavender: {
-          50: "#f8f6fc",
-          100: "#f1ecf8",
-          200: "#dbd1ef",
-          300: "#c6b5e4",
-          400: "#a997d1"
+          50: "#f7f2fd",
+          100: "#ede1fa",
+          200: "#dcc8f4",
+          300: "#b988dc",
+          400: "#831c91"
         },
         gold: {
-          100: "#fcf8f8",
-          200: "#fbefef",
-          300: "#f9dfdf",
-          400: "#f7c9c9",
-          500: "#f5afaf"
+          100: "#f7f2fd",
+          200: "#efe5fa",
+          300: "#ff70bf",
+          400: "#d552a3",
+          500: "#831c91"
         },
         sage: {
-          100: "#eef7f1",
-          200: "#dcebe1",
-          300: "#c1daca",
-          400: "#7ca18b"
+          100: "#f1ebfb",
+          200: "#e1d2f5",
+          300: "#c8ade8",
+          400: "#462c7d"
         }
       },
       fontFamily: {
@@ -88,12 +88,12 @@ module.exports = {
         sm: "calc(var(--radius) - 4px)"
       },
       boxShadow: {
-        glow: "0 22px 70px rgba(245, 175, 175, 0.22)",
-        soft: "0 14px 35px rgba(114, 86, 86, 0.08)"
+        glow: "0 22px 70px rgba(213, 82, 163, 0.22)",
+        soft: "0 14px 35px rgba(70, 44, 125, 0.08)"
       },
       backgroundImage: {
         "hero-glow":
-          "linear-gradient(135deg, rgba(252, 248, 248, 0.96), rgba(251, 239, 239, 0.92) 58%, rgba(249, 223, 223, 0.96))",
+          "linear-gradient(135deg, rgba(247, 242, 253, 0.96), rgba(239, 229, 250, 0.92) 58%, rgba(230, 214, 247, 0.96))",
         "spotlight-radial":
           "radial-gradient(circle at center, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0) 70%)"
       },

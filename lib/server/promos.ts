@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { PromoDiscountType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
@@ -15,6 +16,38 @@ export interface AdminPromoCodeRecord {
   usageCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+function mapPromoRecord(promo: {
+  id: string;
+  code: string;
+  description?: string | null;
+  discountType: PromoDiscountType;
+  amount: number;
+  minOrderAmount?: number | null;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
+  isActive: boolean;
+  usageLimit?: number | null;
+  usageCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}): AdminPromoCodeRecord {
+  return {
+    id: promo.id,
+    code: promo.code,
+    description: promo.description,
+    discountType: promo.discountType,
+    amount: promo.amount,
+    minOrderAmount: promo.minOrderAmount,
+    startsAt: promo.startsAt?.toISOString() ?? null,
+    endsAt: promo.endsAt?.toISOString() ?? null,
+    isActive: promo.isActive,
+    usageLimit: promo.usageLimit,
+    usageCount: promo.usageCount,
+    createdAt: promo.createdAt.toISOString(),
+    updatedAt: promo.updatedAt.toISOString()
+  };
 }
 
 export function normalizePromoCode(code: string) {
@@ -70,7 +103,9 @@ export function calculatePromoDiscount(input: {
   return Math.min(input.subtotalAmount, input.amount);
 }
 
-export async function getAdminPromoCodes(limit = 24): Promise<AdminPromoCodeRecord[]> {
+export async function getAdminPromoCodes(limit?: number): Promise<AdminPromoCodeRecord[]> {
+  noStore();
+
   if (!databaseIsConfigured()) {
     return [];
   }
@@ -78,27 +113,32 @@ export async function getAdminPromoCodes(limit = 24): Promise<AdminPromoCodeReco
   try {
     const records = await prisma.promoCode.findMany({
       orderBy: [{ createdAt: "desc" }],
-      take: limit
+      ...(typeof limit === "number" ? { take: limit } : {})
     });
 
-    return records.map((promo) => ({
-      id: promo.id,
-      code: promo.code,
-      description: promo.description,
-      discountType: promo.discountType,
-      amount: promo.amount,
-      minOrderAmount: promo.minOrderAmount,
-      startsAt: promo.startsAt?.toISOString() ?? null,
-      endsAt: promo.endsAt?.toISOString() ?? null,
-      isActive: promo.isActive,
-      usageLimit: promo.usageLimit,
-      usageCount: promo.usageCount,
-      createdAt: promo.createdAt.toISOString(),
-      updatedAt: promo.updatedAt.toISOString()
-    }));
+    return records.map(mapPromoRecord);
   } catch (error) {
     console.error("Unable to load promo codes from Prisma/Neon", error);
     return [];
+  }
+}
+
+export async function getAdminPromoCodeById(id: string): Promise<AdminPromoCodeRecord | null> {
+  noStore();
+
+  if (!databaseIsConfigured()) {
+    return null;
+  }
+
+  try {
+    const promo = await prisma.promoCode.findUnique({
+      where: { id }
+    });
+
+    return promo ? mapPromoRecord(promo) : null;
+  } catch (error) {
+    console.error(`Unable to load promo code ${id} from Prisma/Neon`, error);
+    return null;
   }
 }
 

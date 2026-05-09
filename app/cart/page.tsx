@@ -1,11 +1,14 @@
 import CartView from "@/components/cart-view";
 import PageHero from "@/components/page-hero";
+import { getDeliveryRates } from "@/lib/server/delivery-rates";
 
 export const metadata = {
   title: "Cart"
 };
 
-export default function CartPage() {
+export default async function CartPage() {
+  const deliveryRates = await getDeliveryRates();
+
   return (
     <>
       <PageHero
@@ -17,7 +20,7 @@ export default function CartPage() {
 
       <section className="py-12 sm:py-14 lg:py-16">
         <div className="container">
-          <CartView />
+          <CartView deliveryRates={deliveryRates} />
         </div>
       </section>
     </>

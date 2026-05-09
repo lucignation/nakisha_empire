@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import type { DeliveryRateRecord } from "@/lib/delivery";
 import { getEffectivePrice } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,12 @@ interface CheckoutPaymentPanelProps {
   discountAmount: number;
   total: number;
   promoCode?: string | null;
+  deliveryRates: DeliveryRateRecord[];
+  selectedStateCode: string;
+  selectedStateName: string;
+  deliveryAddress: string;
+  setSelectedStateCode: (value: string) => void;
+  setDeliveryAddress: (value: string) => void;
 }
 
 const gatewayCopy: Record<
@@ -56,7 +64,13 @@ export default function CheckoutPaymentPanel({
   shipping,
   discountAmount,
   total,
-  promoCode
+  promoCode,
+  deliveryRates,
+  selectedStateCode,
+  selectedStateName,
+  deliveryAddress,
+  setSelectedStateCode,
+  setDeliveryAddress
 }: CheckoutPaymentPanelProps) {
   const { items, clearCart } = useCart();
   const [gateway, setGateway] = useState<PaymentGateway>("paystack");
@@ -179,6 +193,16 @@ export default function CheckoutPaymentPanel({
       return false;
     }
 
+    if (!deliveryAddress.trim()) {
+      toast.error("Enter the delivery address before paying.");
+      return false;
+    }
+
+    if (!selectedStateCode || !selectedStateName) {
+      toast.error("Select the delivery state before paying.");
+      return false;
+    }
+
     if (!gatewayAvailability[gateway]) {
       return false;
     }
@@ -251,6 +275,9 @@ export default function CheckoutPaymentPanel({
         customerName: customerName.trim(),
         customerEmail: customerEmail.trim(),
         customerPhone: phoneNumber.trim() || null,
+        deliveryAddress: deliveryAddress.trim(),
+        deliveryStateCode: selectedStateCode,
+        deliveryStateName: selectedStateName,
         paymentReference: input.paymentReference,
         transactionId: input.transactionId,
         subtotalAmount: subtotal,
@@ -602,6 +629,33 @@ export default function CheckoutPaymentPanel({
               placeholder="+234 801 234 5678"
               type="tel"
               value={phoneNumber}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="checkout-state">Delivery state</Label>
+            <select
+              className="h-11 w-full rounded-[14px] border border-[#e1d3c1] bg-white px-4 text-sm text-foreground outline-none"
+              id="checkout-state"
+              onChange={(event) => setSelectedStateCode(event.target.value)}
+              value={selectedStateCode}
+            >
+              <option value="">Select your state</option>
+              {deliveryRates.map((rate) => (
+                <option key={rate.stateCode} value={rate.stateCode}>
+                  {rate.stateName} {rate.feeAmount > 0 ? `- ₦${rate.feeAmount.toLocaleString("en-NG")}` : "- Free"}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="checkout-address">Delivery address</Label>
+            <Textarea
+              id="checkout-address"
+              onChange={(event) => setDeliveryAddress(event.target.value)}
+              placeholder="House number, street, area, city or landmark"
+              value={deliveryAddress}
             />
           </div>
         </div>

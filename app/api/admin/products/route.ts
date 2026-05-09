@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromCookies } from "@/lib/server/admin-auth";
-import { uploadProductImage } from "@/lib/server/cloudinary";
+import { deleteProductImage, uploadProductImage } from "@/lib/server/cloudinary";
 import {
   createInventoryLogIfNeeded,
   ensureUniqueProductSlug,
   parseListField,
+  toProductGalleryImagesInput,
   productCreateSchema,
   resolveInventoryState
 } from "@/lib/server/product-admin";
@@ -14,6 +15,8 @@ import {
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const uploadedImages: Array<{ secure_url: string; public_id: string }> = [];
+
   try {
     if (!getAdminSessionFromCookies()) {
       return NextResponse.json(
@@ -36,19 +39,18 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData();
-    const image = formData.get("image");
+    const primaryImage = formData.get("image");
+    const galleryImages = formData.getAll("galleryImages");
 
-    if (!(image instanceof File) || image.size === 0) {
+    if (!(primaryImage instanceof File) || primaryImage.size === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: "A product image is required."
+          message: "A primary product image is required."
         },
         { status: 400 }
       );
     }
-
-    const uploadedImage = await uploadProductImage(image);
 
     const parsed = productCreateSchema.parse({
       name: formData.get("name"),
@@ -73,9 +75,19 @@ export async function POST(request: Request) {
       stockQuantity: formData.get("stockQuantity"),
       isOutOfStock: String(formData.get("isOutOfStock")) === "true",
       isPublished: String(formData.get("isPublished")) === "true",
-      imageUrl: uploadedImage.secure_url,
-      cloudinaryPublicId: uploadedImage.public_id
+      imageUrl: "https://placeholder.example.com/image.jpg",
+      cloudinaryPublicId: null
     });
+
+    uploadedImages.push(await uploadProductImage(primaryImage));
+
+    for (const galleryImage of galleryImages) {
+      if (galleryImage instanceof File && galleryImage.size > 0) {
+        uploadedImages.push(await uploadProductImage(galleryImage));
+      }
+    }
+
+    const [uploadedPrimaryImage, ...uploadedGalleryImages] = uploadedImages;
 
     const slug = await ensureUniqueProductSlug(parsed.slug || parsed.name);
     const inventoryState = resolveInventoryState({
@@ -103,8 +115,14 @@ export async function POST(request: Request) {
           badge: parsed.badge,
           emoji: "✨",
           accent: "gold",
-          imageUrl: parsed.imageUrl,
-          cloudinaryPublicId: parsed.cloudinaryPublicId,
+          imageUrl: uploadedPrimaryImage.secure_url,
+          cloudinaryPublicId: uploadedPrimaryImage.public_id,
+          galleryImages: toProductGalleryImagesInput(
+            uploadedGalleryImages.map((image) => ({
+              url: image.secure_url,
+              publicId: image.public_id
+            }))
+          ),
           skinGoal: parsed.skinGoal,
           collection: parsed.collection,
           highlights: parsed.highlights,
@@ -143,6 +161,14 @@ export async function POST(request: Request) {
         },
         { status: 400 }
       );
+    }
+
+    for (const image of uploadedImages) {
+      try {
+        await deleteProductImage(image.public_id);
+      } catch (cleanupError) {
+        console.error("Unable to clean up uploaded Cloudinary image after failure", cleanupError);
+      }
     }
 
     return NextResponse.json(

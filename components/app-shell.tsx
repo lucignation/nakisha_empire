@@ -15,7 +15,7 @@ export default function AppShell({ children }: AppShellProps) {
   const isAdminRoute = pathname.startsWith("/admin");
 
   if (isAdminRoute) {
-    return <main className="min-h-screen bg-[#0b1020]">{children}</main>;
+    return <main className="min-h-screen overflow-x-clip bg-[#0b1020]">{children}</main>;
   }
 
   return (

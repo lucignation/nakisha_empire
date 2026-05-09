@@ -49,6 +49,7 @@ model Product {
   accent            String?
   imageUrl          String
   cloudinaryPublicId String?
+  galleryImages     Json?
   skinGoal          String
   collection        String
   highlights        Json
@@ -63,6 +64,7 @@ model Product {
   updatedAt         DateTime       @updatedAt
   inventoryLogs     InventoryLog[]
   orderItems        OrderItem[]
+  backInStockSubscriptions BackInStockSubscription[]
 
   @@index([isPublished, createdAt])
   @@index([category, brand])
@@ -87,6 +89,9 @@ model Order {
   customerName     String
   customerEmail    String
   customerPhone    String?
+  deliveryAddress  String         @default("")
+  deliveryStateCode String        @default("")
+  deliveryStateName String        @default("")
   status           OrderStatus    @default(PENDING)
   paymentGateway   PaymentGateway?
   paymentReference String?        @unique
@@ -101,6 +106,7 @@ model Order {
 
   @@index([customerEmail, createdAt])
   @@index([status, createdAt])
+  @@index([deliveryStateCode, createdAt])
 }
 
 model OrderItem {
@@ -147,4 +153,27 @@ model PromoCode {
   updatedAt      DateTime          @updatedAt
 
   @@index([code, isActive])
+}
+
+model DeliveryRate {
+  id         String   @id @default(cuid())
+  stateCode  String   @unique
+  stateName  String
+  feeAmount  Int      @default(4500)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([stateName])
+}
+
+model BackInStockSubscription {
+  id         String   @id @default(cuid())
+  productId  String
+  email      String
+  createdAt  DateTime @default(now())
+  notifiedAt DateTime?
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, email])
+  @@index([productId, notifiedAt])
 }

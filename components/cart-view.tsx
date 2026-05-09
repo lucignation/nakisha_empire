@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getDeliveryRateForState, type DeliveryRateRecord } from "@/lib/delivery";
 import { formatCurrency, getEffectivePrice, isProductOnSale } from "@/lib/data";
 
 interface AppliedPromoState {
@@ -19,13 +20,20 @@ interface AppliedPromoState {
   discountAmount: number;
 }
 
-export default function CartView() {
+interface CartViewProps {
+  deliveryRates: DeliveryRateRecord[];
+}
+
+export default function CartView({ deliveryRates }: CartViewProps) {
   const { items, hydrated, subtotal, updateQuantity, removeItem, clearCart } = useCart();
   const [promoCodeInput, setPromoCodeInput] = useState("");
   const [applyingPromo, setApplyingPromo] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromoState | null>(null);
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [selectedStateCode, setSelectedStateCode] = useState("");
 
-  const shipping = subtotal >= 60000 ? 0 : 4500;
+  const selectedDeliveryRate = getDeliveryRateForState(deliveryRates, selectedStateCode);
+  const shipping = selectedDeliveryRate?.feeAmount ?? 0;
   const discountAmount = appliedPromo?.discountAmount ?? 0;
   const total = Math.max(0, subtotal + shipping - discountAmount);
 
@@ -210,8 +218,10 @@ export default function CartView() {
               </>
             ) : null}
             <div className="flex items-center justify-between">
-              <span>Delivery</span>
-              <strong>{shipping === 0 ? "Free" : formatCurrency(shipping)}</strong>
+              <span>Delivery {selectedDeliveryRate ? `(${selectedDeliveryRate.stateName})` : ""}</span>
+              <strong>
+                {selectedDeliveryRate ? (shipping === 0 ? "Free" : formatCurrency(shipping)) : "Select state"}
+              </strong>
             </div>
             <Separator />
             <div className="flex items-center justify-between font-medium">
@@ -258,7 +268,13 @@ export default function CartView() {
 
           <CheckoutPaymentPanel
             discountAmount={discountAmount}
+            deliveryAddress={deliveryAddress}
+            deliveryRates={deliveryRates}
             promoCode={appliedPromo?.code ?? null}
+            selectedStateCode={selectedStateCode}
+            selectedStateName={selectedDeliveryRate?.stateName ?? ""}
+            setDeliveryAddress={setDeliveryAddress}
+            setSelectedStateCode={setSelectedStateCode}
             shipping={shipping}
             subtotal={subtotal}
             total={total}
@@ -269,7 +285,7 @@ export default function CartView() {
           </Button>
 
           <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
-            Free delivery unlocks automatically from ₦60,000.
+            Delivery is calculated from the state selected during checkout.
           </p>
         </CardContent>
       </Card>

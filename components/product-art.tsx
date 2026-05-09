@@ -27,7 +27,7 @@ export default function ProductArt({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[16px] bg-[#f4ede4]",
+        "relative overflow-hidden rounded-[16px] bg-[var(--surface-soft)]",
         ratio === "auto" && (large ? "min-h-[18rem] sm:min-h-[22rem] lg:min-h-[28rem]" : "min-h-[15rem]"),
         ratioStyles[ratio],
         className

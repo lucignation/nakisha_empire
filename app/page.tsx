@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HomeHeroCarousel, { type HomeHeroSlide } from "@/components/home-hero-carousel";
 import LogoMarquee from "@/components/logo-marquee";
 import NewsletterSignup from "@/components/newsletter-signup";
 import ProductCard from "@/components/product-card";
@@ -14,8 +15,8 @@ const pageStyles = `
     --home-cream-dk: var(--brand-200);
     --home-brown-xs: var(--brand-ink-soft);
     --home-brown-sm: var(--brand-ink);
-    --home-brown-md: #664949;
-    --home-brown-dk: #3f2c2c;
+    --home-brown-md: var(--brand-500);
+    --home-brown-dk: var(--brand-600);
     --home-gold: var(--brand-400);
     --home-gold-lt: var(--brand-300);
     --home-gold-dk: var(--brand-500);
@@ -987,48 +988,74 @@ export default async function HomePage() {
     { num: "24h", label: "Dispatch Time" }
   ];
 
+  const heroSlides: HomeHeroSlide[] = [
+    {
+      id: "daily-routine",
+      badge: "Daily Routine",
+      title: "Build a faster skincare cart",
+      copy:
+        "Shop bestselling serums, moisturizers, and SPF in a shorter path with live promos, quick add-to-cart, and built-in order tracking.",
+      primaryLabel: "Shop Bestsellers",
+      primaryHref: "/shop",
+      secondaryLabel: "Track an Order",
+      secondaryHref: "/track",
+      highlights: ["Fast checkout", "Timed promos", "Nationwide delivery"],
+      product: productAt(0),
+      secondaryProduct: productAt(2),
+      statValue: "4.9★",
+      statLabel: "Average shopper rating across fast-moving essentials.",
+      supportTitle: "Built for quicker buying",
+      supportCopy: "The layout prioritizes browsing, pricing, and immediate conversion instead of oversized storytelling blocks.",
+      tone: "warm"
+    },
+    {
+      id: "hydration-edit",
+      badge: "Hydration Edit",
+      title: "Shop glow essentials in one clean view",
+      copy:
+        "See product details, promo prices, and delivery-ready bestsellers without leaving the main storefront flow.",
+      primaryLabel: "Browse Shop",
+      primaryHref: "/shop",
+      secondaryLabel: "Book Consultation",
+      secondaryHref: "/consultation",
+      highlights: ["Real product photos", "Offer pricing", "Consultation available"],
+      product: productAt(1),
+      secondaryProduct: productAt(3),
+      statValue: "24h",
+      statLabel: "Dispatch target for ready-to-ship orders.",
+      supportTitle: "Clear product-first hierarchy",
+      supportCopy: "Every slide keeps price, product visibility, and next actions in focus so shoppers stay oriented.",
+      tone: "rose"
+    },
+    {
+      id: "body-and-spf",
+      badge: "Promo Window",
+      title: "Catch limited deals before they rotate",
+      copy:
+        "Use promo-led pricing and featured product slots to push the products you want customers to buy now.",
+      primaryLabel: "View Deals",
+      primaryHref: "/shop",
+      secondaryLabel: "See Cart",
+      secondaryHref: "/cart",
+      highlights: ["Promo-ready", "Order updates", "High-intent sections"],
+      product: productAt(4),
+      secondaryProduct: productAt(5),
+      statValue: "10K+",
+      statLabel: "Shoppers engaging across featured categories.",
+      supportTitle: "Designed to convert",
+      supportCopy: "This carousel keeps the hero compact while still rotating multiple products and promotional angles.",
+      tone: "sage"
+    }
+  ];
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: pageStyles }} />
 
       <div className="home-curated-page">
         <section>
-          <div className="home-hero-wrap">
-            <div className="home-hero-copy-col">
-              <span className="home-hero-badge">Limited Offer</span>
-              <h1 className="home-hero-title">
-                Shop high-performing skincare
-                <br />
-                <em>without slow browsing.</em>
-              </h1>
-              <p className="home-hero-copy">
-                Find bestselling serums, moisturizers, cleansers, and SPF with live promos, quick add-to-cart, and
-                order tracking built into the storefront.
-              </p>
-              <div className="home-hero-actions">
-                <Link className="home-btn-primary" href="/shop">
-                  Shop Deals
-                </Link>
-                <Link className="home-btn-ghost" href="/track">
-                  Track an Order
-                </Link>
-              </div>
-              <div className="home-hero-highlights">
-                {["Bestsellers restocked", "Quick add to cart", "Nationwide delivery"].map((item) => (
-                  <span className="home-hero-highlight-item" key={item}>
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="home-hero-image-col">
-              <img
-                alt="Skincare hero"
-                src="https://images.pexels.com/photos/29924642/pexels-photo-29924642.jpeg?cs=srgb&dl=pexels-rdne-29924642.jpg&fm=jpg"
-              />
-              <div className="home-hero-image-overlay" />
-            </div>
+          <div className="container">
+            <HomeHeroCarousel slides={heroSlides} />
           </div>
         </section>
 

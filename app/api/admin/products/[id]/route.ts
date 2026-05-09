@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromCookies } from "@/lib/server/admin-auth";
+import { sendBackInStockNotifications } from "@/lib/server/back-in-stock";
 import { deleteProductImage, uploadProductImage } from "@/lib/server/cloudinary";
 import {
   createInventoryLogIfNeeded,
+  normalizeProductGalleryImages,
   parseListField,
+  parseProductGalleryImagesField,
   productUpdateSchema,
-  resolveInventoryState
+  resolveInventoryState,
+  toProductGalleryImagesInput
 } from "@/lib/server/product-admin";
 
 interface RouteContext {
@@ -20,6 +24,7 @@ export const runtime = "nodejs";
 
 export async function PATCH(request: Request, context: RouteContext) {
   let uploadedImage: { secure_url: string; public_id: string } | null = null;
+  const uploadedGalleryImages: Array<{ secure_url: string; public_id: string }> = [];
 
   try {
     if (!getAdminSessionFromCookies()) {
@@ -47,7 +52,10 @@ export async function PATCH(request: Request, context: RouteContext) {
       select: {
         id: true,
         stockQuantity: true,
-        cloudinaryPublicId: true
+        trackInventory: true,
+        isOutOfStock: true,
+        cloudinaryPublicId: true,
+        galleryImages: true
       }
     });
 
@@ -63,9 +71,20 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const formData = await request.formData();
     const image = formData.get("image");
+    const galleryImages = formData.getAll("galleryImages");
+    const existingGalleryMedia = normalizeProductGalleryImages(existingProduct.galleryImages);
+    const retainedGalleryMedia = formData.has("galleryMedia")
+      ? parseProductGalleryImagesField(formData.get("galleryMedia"))
+      : existingGalleryMedia;
 
     if (image instanceof File && image.size > 0) {
       uploadedImage = await uploadProductImage(image);
+    }
+
+    for (const galleryImage of galleryImages) {
+      if (galleryImage instanceof File && galleryImage.size > 0) {
+        uploadedGalleryImages.push(await uploadProductImage(galleryImage));
+      }
     }
 
     const payload = productUpdateSchema.parse({
@@ -96,6 +115,23 @@ export async function PATCH(request: Request, context: RouteContext) {
       stockQuantity: payload.stockQuantity,
       isOutOfStock: payload.isOutOfStock
     });
+    const wasAvailable = existingProduct.trackInventory
+      ? !existingProduct.isOutOfStock && existingProduct.stockQuantity > 0
+      : !existingProduct.isOutOfStock;
+    const removedGalleryPublicIds = existingGalleryMedia.flatMap((item) => {
+      if (!item.publicId) {
+        return [];
+      }
+
+      return retainedGalleryMedia.some((retainedItem) => retainedItem.publicId === item.publicId) ? [] : [item.publicId];
+    });
+    const nextGalleryMedia = [
+      ...retainedGalleryMedia,
+      ...uploadedGalleryImages.map((galleryImage) => ({
+        url: galleryImage.secure_url,
+        publicId: galleryImage.public_id
+      }))
+    ];
 
     await prisma.$transaction(async (tx) => {
       await tx.product.update({
@@ -122,6 +158,7 @@ export async function PATCH(request: Request, context: RouteContext) {
           trackInventory: payload.trackInventory,
           stockQuantity: inventoryState.stockQuantity,
           isOutOfStock: inventoryState.isOutOfStock,
+          galleryImages: toProductGalleryImagesInput(nextGalleryMedia),
           ...(uploadedImage
             ? {
                 imageUrl: uploadedImage.secure_url,
@@ -146,6 +183,20 @@ export async function PATCH(request: Request, context: RouteContext) {
       });
     }
 
+    const isAvailableNow = payload.trackInventory ? !inventoryState.isOutOfStock && inventoryState.stockQuantity > 0 : !inventoryState.isOutOfStock;
+
+    if (!wasAvailable && isAvailableNow) {
+      void sendBackInStockNotifications(context.params.id).catch((error) => {
+        console.error("Unable to send back-in-stock notifications automatically", error);
+      });
+    }
+
+    for (const publicId of removedGalleryPublicIds) {
+      void deleteProductImage(publicId).catch((error) => {
+        console.error("Unable to remove previous gallery image", error);
+      });
+    }
+
     return NextResponse.json({
       success: true
     });
@@ -155,6 +206,14 @@ export async function PATCH(request: Request, context: RouteContext) {
         await deleteProductImage(uploadedImage.public_id);
       } catch (cleanupError) {
         console.error("Unable to clean up uploaded Cloudinary image after failure", cleanupError);
+      }
+    }
+
+    for (const galleryImage of uploadedGalleryImages) {
+      try {
+        await deleteProductImage(galleryImage.public_id);
+      } catch (cleanupError) {
+        console.error("Unable to clean up uploaded Cloudinary gallery image after failure", cleanupError);
       }
     }
 

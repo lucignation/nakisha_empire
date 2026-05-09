@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AddToCartButton from "@/components/add-to-cart-button";
-import ProductArt from "@/components/product-art";
+import BackInStockForm from "@/components/back-in-stock-form";
+import ProductGallery from "@/components/product-gallery";
 import ProductCard from "@/components/product-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -62,7 +63,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-10">
-            <ProductArt large product={product} />
+            <ProductGallery product={product} />
 
             <Card className="bg-white/85">
               <CardContent className="space-y-6 p-6 sm:p-8">
@@ -121,10 +122,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <AddToCartButton className="w-full sm:w-auto" product={product} />
-                  <Button asChild className="w-full sm:w-auto" variant="outline">
-                    <Link href="/cart">View cart</Link>
-                  </Button>
+                  {available ? (
+                    <>
+                      <AddToCartButton className="w-full sm:w-auto" product={product} />
+                      <Button asChild className="w-full sm:w-auto" variant="outline">
+                        <Link href="/cart">View cart</Link>
+                      </Button>
+                    </>
+                  ) : product.id ? (
+                    <BackInStockForm productId={product.id} productName={product.name} />
+                  ) : null}
                 </div>
               </CardContent>
             </Card>

@@ -2,8 +2,45 @@ import { unstable_noStore as noStore } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { products as fallbackProducts, type Product } from "@/lib/data";
+import { normalizeProductGalleryImages, type ProductGalleryImage } from "@/lib/server/product-admin";
 
 const productSelect = {
+  id: true,
+  slug: true,
+  name: true,
+  shortDescription: true,
+  description: true,
+  category: true,
+  brand: true,
+  size: true,
+  price: true,
+  salePrice: true,
+  promoStartsAt: true,
+  promoEndsAt: true,
+  rating: true,
+  reviewCount: true,
+  badge: true,
+  emoji: true,
+  accent: true,
+  imageUrl: true,
+  cloudinaryPublicId: true,
+  galleryImages: true,
+  skinGoal: true,
+  collection: true,
+  highlights: true,
+  ingredients: true,
+  howToUse: true,
+  sku: true,
+  isPublished: true,
+  trackInventory: true,
+  stockQuantity: true,
+  isOutOfStock: true,
+  createdAt: true,
+  updatedAt: true
+} satisfies Prisma.ProductSelect;
+
+type ProductRecord = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
+const legacyProductSelect = {
   id: true,
   slug: true,
   name: true,
@@ -37,10 +74,12 @@ const productSelect = {
   updatedAt: true
 } satisfies Prisma.ProductSelect;
 
-type ProductRecord = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
+type LegacyProductRecord = Prisma.ProductGetPayload<{ select: typeof legacyProductSelect }>;
+let productQueryMode: "full" | "legacy" = "full";
 
 export interface AdminProductRecord extends Product {
   id: string;
+  galleryMedia: ProductGalleryImage[];
 }
 
 export interface InventoryActivityRecord {
@@ -76,7 +115,14 @@ function normalizeStringArray(value: unknown) {
   return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 }
 
-function mapDatabaseProduct(product: ProductRecord): AdminProductRecord {
+function isMissingColumnError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022";
+}
+
+function mapDatabaseProduct(product: ProductRecord | LegacyProductRecord): AdminProductRecord {
+  const galleryMedia = "galleryImages" in product ? normalizeProductGalleryImages(product.galleryImages) : [];
+  const images = [product.imageUrl, ...galleryMedia.map((item) => item.url)];
+
   return {
     id: product.id,
     slug: product.slug,
@@ -96,7 +142,9 @@ function mapDatabaseProduct(product: ProductRecord): AdminProductRecord {
     emoji: product.emoji ?? "✨",
     accent: product.accent ?? "gold",
     image: product.imageUrl,
+    images,
     cloudinaryPublicId: product.cloudinaryPublicId,
+    galleryMedia,
     skinGoal: product.skinGoal,
     collection: product.collection,
     stars: ratingToStars(product.rating),
@@ -117,10 +165,12 @@ function getFallbackProducts(): AdminProductRecord[] {
   return fallbackProducts.map((product, index) => ({
     ...product,
     id: `fallback-${product.slug}`,
+    images: product.images?.length ? product.images : [product.image],
     badge: product.badge || "Featured",
     emoji: product.emoji || "✨",
     accent: product.accent || "gold",
     cloudinaryPublicId: null,
+    galleryMedia: [],
     sku: `SKU-${String(index + 1).padStart(4, "0")}`,
     isPublished: true,
     trackInventory: false,
@@ -138,6 +188,21 @@ async function fetchDatabaseProducts(where?: Prisma.ProductWhereInput) {
     return null;
   }
 
+  if (productQueryMode === "legacy") {
+    try {
+      const legacyRecords = await prisma.product.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }],
+        select: legacyProductSelect
+      });
+
+      return legacyRecords.map(mapDatabaseProduct);
+    } catch (legacyError) {
+      console.error("Unable to query products from Prisma/Neon using the legacy schema fallback", legacyError);
+      return null;
+    }
+  }
+
   try {
     const records = await prisma.product.findMany({
       where,
@@ -147,6 +212,23 @@ async function fetchDatabaseProducts(where?: Prisma.ProductWhereInput) {
 
     return records.map(mapDatabaseProduct);
   } catch (error) {
+    if (isMissingColumnError(error)) {
+      productQueryMode = "legacy";
+
+      try {
+        const legacyRecords = await prisma.product.findMany({
+          where,
+          orderBy: [{ createdAt: "desc" }],
+          select: legacyProductSelect
+        });
+
+        return legacyRecords.map(mapDatabaseProduct);
+      } catch (legacyError) {
+        console.error("Unable to query products from Prisma/Neon using the legacy schema fallback", legacyError);
+        return null;
+      }
+    }
+
     console.error("Unable to query products from Prisma/Neon", error);
     return null;
   }
@@ -172,6 +254,57 @@ export async function getAdminProducts(): Promise<AdminProductRecord[]> {
   }
 
   return getFallbackProducts();
+}
+
+export async function getAdminProductById(id: string): Promise<AdminProductRecord | null> {
+  noStore();
+
+  if (databaseIsConfigured()) {
+    if (productQueryMode === "legacy") {
+      try {
+        const legacyProduct = await prisma.product.findUnique({
+          where: { id },
+          select: legacyProductSelect
+        });
+
+        return legacyProduct ? mapDatabaseProduct(legacyProduct) : null;
+      } catch (legacyError) {
+        console.error(`Unable to query admin product ${id} from Prisma/Neon using the legacy schema fallback`, legacyError);
+      }
+    }
+
+    try {
+      const product = await prisma.product.findUnique({
+        where: { id },
+        select: productSelect
+      });
+
+      if (product) {
+        return mapDatabaseProduct(product);
+      }
+    } catch (error) {
+      if (isMissingColumnError(error)) {
+        productQueryMode = "legacy";
+
+        try {
+          const legacyProduct = await prisma.product.findUnique({
+            where: { id },
+            select: legacyProductSelect
+          });
+
+          if (legacyProduct) {
+            return mapDatabaseProduct(legacyProduct);
+          }
+        } catch (legacyError) {
+          console.error(`Unable to query admin product ${id} from Prisma/Neon using the legacy schema fallback`, legacyError);
+        }
+      }
+
+      console.error(`Unable to query admin product ${id} from Prisma/Neon`, error);
+    }
+  }
+
+  return getFallbackProducts().find((product) => product.id === id) ?? null;
 }
 
 export async function getRecentInventoryLogs(limit = 8): Promise<InventoryActivityRecord[]> {
@@ -221,6 +354,24 @@ export async function getStorefrontProductBySlug(slug: string): Promise<Product 
   noStore();
 
   if (databaseIsConfigured()) {
+    if (productQueryMode === "legacy") {
+      try {
+        const legacyProduct = await prisma.product.findFirst({
+          where: {
+            slug,
+            isPublished: true
+          },
+          select: legacyProductSelect
+        });
+
+        if (legacyProduct) {
+          return mapDatabaseProduct(legacyProduct);
+        }
+      } catch (legacyError) {
+        console.error(`Unable to query product ${slug} from Prisma/Neon using the legacy schema fallback`, legacyError);
+      }
+    }
+
     try {
       const product = await prisma.product.findFirst({
         where: {
@@ -234,6 +385,26 @@ export async function getStorefrontProductBySlug(slug: string): Promise<Product 
         return mapDatabaseProduct(product);
       }
     } catch (error) {
+      if (isMissingColumnError(error)) {
+        productQueryMode = "legacy";
+
+        try {
+          const legacyProduct = await prisma.product.findFirst({
+            where: {
+              slug,
+              isPublished: true
+            },
+            select: legacyProductSelect
+          });
+
+          if (legacyProduct) {
+            return mapDatabaseProduct(legacyProduct);
+          }
+        } catch (legacyError) {
+          console.error(`Unable to query product ${slug} from Prisma/Neon using the legacy schema fallback`, legacyError);
+        }
+      }
+
       console.error(`Unable to query product ${slug} from Prisma/Neon`, error);
     }
   }

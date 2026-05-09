@@ -122,7 +122,7 @@ export default function OrderTrackingPanel() {
         <CardHeader>
           <CardTitle>Track an order</CardTitle>
           <CardDescription>
-            Enter the order number or payment transaction reference together with the email used during checkout.
+            Enter the short order number or payment transaction reference together with the email used during checkout.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -131,7 +131,7 @@ export default function OrderTrackingPanel() {
               <label className="text-sm font-medium text-foreground">Order number or transaction ID</label>
               <Input
                 onChange={(event) => setReference(event.target.value)}
-                placeholder="NKE-20260506-ABC123 or NKE-PS-..."
+                placeholder="NKE-A1B2C3 or PS-..."
                 value={reference}
               />
             </div>
